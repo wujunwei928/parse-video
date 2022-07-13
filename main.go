@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/wujunwei928/parse-video/library/parser"
+	"github.com/wujunwei928/parse-video/parser"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,16 +21,21 @@ func main() {
 		urlReg := regexp.MustCompile(`https?:\/\/\S+`)
 		videoShareUrl := urlReg.FindString(c.Query("url"))
 
-		douYin := parser.DouYin{
-			ShareUrl: videoShareUrl,
-		}
-		parseRes, _ := douYin.Parse()
+		parseRes, _ := parser.ParseShareUrl(videoShareUrl)
 
 		c.JSONP(http.StatusOK, parseRes)
 	})
 
 	r.GET("/video/id/parse", func(c *gin.Context) {
-		c.JSON(200, gin.H{})
+		videoId := c.Query("video_id")
+		source := c.Query("source")
+
+		parseRes, err := parser.ParseVideoId(videoId, source)
+		if err != nil {
+			c.JSON(500, err.Error())
+		}
+
+		c.JSON(200, parseRes)
 	})
 
 	srv := &http.Server{
