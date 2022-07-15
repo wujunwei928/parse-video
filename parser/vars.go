@@ -1,18 +1,19 @@
 package parser
 
 const (
-	SourceDouYin   = "douyin"
-	SourceKuaiShou = "kuaishou"
-	SourcePiPiXia  = "pipixia"
-	SourceHuoShan  = "huoshan"
-	SourceWeiBo    = "weibo"
-	SourceWeiShi   = "weishi"
-	SourceLvZhou   = "lvzhou"
-	SourceZuiYou   = "zuiyou"
-	SourceBBQ      = "bbq"
-	SourceQuanMin  = "quanmin"
-	SourceXiGua    = "xigua"
-	SourceLiShiPin = "lishipin"
+	SourceDouYin      = "douyin"
+	SourceKuaiShou    = "kuaishou"
+	SourcePiPiXia     = "pipixia"
+	SourceHuoShan     = "huoshan"
+	SourceWeiBo       = "weibo"
+	SourceWeiShi      = "weishi"
+	SourceLvZhou      = "lvzhou"
+	SourceZuiYou      = "zuiyou"
+	SourceBBQ         = "bbq"
+	SourceQuanMin     = "quanmin"
+	SourceXiGua       = "xigua"
+	SourceLiShiPin    = "lishipin"
+	SourcePiPiGaoXiao = "pipigaoxiao"
 )
 
 // videoShareUrlParser 根据视频分享地址解析

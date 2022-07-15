@@ -49,7 +49,6 @@ func (l liShiPin) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(urlRes.Path)
 
 	videoId := strings.ReplaceAll(urlRes.Path, "/detail_", "")
 	if len(videoId) <= 0 {
