@@ -10,16 +10,17 @@ const (
 	SourceZuiYou   = "zuiyou"
 	SourceBBQ      = "bbq"
 	SourceQuanMin  = "quanmin"
+	SourceXiGua    = "xigua"
 )
-
-// videoIdParser 根据视频ID解析
-type videoIdParser interface {
-	parseVideoID(videoId string) ([]*VideoParseInfo, error)
-}
 
 // videoShareUrlParser 根据视频分享地址解析
 type videoShareUrlParser interface {
-	parseShareUrl(shareUrl string) ([]*VideoParseInfo, error)
+	parseShareUrl(shareUrl string) (*VideoParseInfo, error)
+}
+
+// videoIdParser 根据视频ID解析
+type videoIdParser interface {
+	parseVideoID(videoId string) (*VideoParseInfo, error)
 }
 
 // VideoParseInfo 视频解析信息

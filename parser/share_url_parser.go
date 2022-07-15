@@ -7,22 +7,34 @@ import (
 )
 
 var parseShareUrlMapping = map[string]videoShareUrlParser{
-	SourceDouYin: douYin{},
+	SourceDouYin:   douYin{},
+	SourceKuaiShou: kuaiShou{},
+	SourceZuiYou:   zuiYou{},
+	SourceXiGua:    xiGua{},
 }
 
-func ParseShareUrl(shareUrl string) ([]*VideoParseInfo, error) {
+// 分享链接中, 域名和来源映射信息
+var shareUrlSourceDomainMapping = map[string]string{
+	SourceDouYin:   "douyin.com",
+	SourceKuaiShou: "kuaishou.com",
+	SourceZuiYou:   "xiaochuankeji.cn",
+	SourceXiGua:    "v.ixigua.com",
+}
+
+func ParseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	if len(shareUrl) <= 0 {
 		return nil, errors.New("video id or source is empty")
 	}
 
 	// 根据url判断source
 	source := ""
-	switch {
-	case strings.Contains(shareUrl, "douyin.com"):
-		source = SourceDouYin
-	case strings.Contains(shareUrl, "kuaishou.com"):
-		source = SourceKuaiShou
+	for itemSource, itemDomain := range shareUrlSourceDomainMapping {
+		if strings.Contains(shareUrl, itemDomain) {
+			source = itemSource
+			break
+		}
 	}
+	fmt.Println(source)
 
 	urlParser, ok := parseShareUrlMapping[source]
 	if !ok {

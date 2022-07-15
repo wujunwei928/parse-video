@@ -30,13 +30,53 @@ type douYinRes struct {
 
 type douYin struct{}
 
-func (d douYin) parseVideoID(videoId string) ([]*VideoParseInfo, error) {
+func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	if len(videoId) <= 0 {
 		return nil, errors.New("video id is empty")
 	}
 
+	parseList, err := d.MultiParseVideoID([]string{videoId})
+	if err != nil {
+		return nil, err
+	}
+	if len(parseList) <= 0 {
+		return nil, errors.New("has no parse info")
+	}
+
+	return parseList[0], nil
+}
+
+func (d douYin) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
+	if len(shareUrl) <= 0 {
+		return nil, errors.New("video share url is empty")
+	}
+
+	client := resty.New()
+	client.SetRedirectPolicy(resty.NoRedirectPolicy())
+	res, _ := client.R().EnableTrace().Get(shareUrl)
+	// 这里会返回err, auto redirect is disabled
+
+	locationRes, err := res.RawResponse.Location()
+	if err != nil {
+		return nil, err
+	}
+
+	videoId := strings.ReplaceAll(strings.Trim(locationRes.Path, "/"), "share/video/", "")
+	if len(videoId) <= 0 {
+		return nil, errors.New("parse video id from share url fail")
+	}
+
+	return d.parseVideoID(videoId)
+}
+
+func (d douYin) MultiParseVideoID(videoIds []string) ([]*VideoParseInfo, error) {
+	if len(videoIds) <= 0 {
+		return nil, errors.New("video ids is empty")
+	}
+
 	// 支持多个videoId批量获取, 用逗号隔开
-	reqUrl := "https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/?item_ids=" + videoId
+	itemIds := strings.Join(videoIds, ",")
+	reqUrl := "https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/?item_ids=" + itemIds
 	client := resty.New()
 	res, err := client.R().Get(reqUrl)
 	if err != nil {
@@ -61,27 +101,4 @@ func (d douYin) parseVideoID(videoId string) ([]*VideoParseInfo, error) {
 	}
 
 	return parseList, nil
-}
-
-func (d douYin) parseShareUrl(shareUrl string) ([]*VideoParseInfo, error) {
-	if len(shareUrl) <= 0 {
-		return nil, errors.New("video share url is empty")
-	}
-
-	client := resty.New()
-	client.SetRedirectPolicy(resty.NoRedirectPolicy())
-	res, _ := client.R().EnableTrace().Get(shareUrl)
-	// 这里会返回err, auto redirect is disabled
-
-	locationRes, err := res.RawResponse.Location()
-	if err != nil {
-		return nil, err
-	}
-
-	videoId := strings.ReplaceAll(strings.Trim(locationRes.Path, "/"), "share/video/", "")
-	if len(videoId) <= 0 {
-		return nil, errors.New("parse video id from share url fail")
-	}
-
-	return d.parseVideoID(videoId)
 }

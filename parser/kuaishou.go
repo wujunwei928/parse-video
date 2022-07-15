@@ -31,11 +31,11 @@ func (l LogRedirects) RoundTrip(req *http.Request) (resp *http.Response, err err
 	return
 }
 
-func (k kuaiShou) parseVideoID(videoId string) ([]*VideoParseInfo, error) {
+func (k kuaiShou) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	return nil, nil
 }
 
-func (k kuaiShou) parseShareUrl(shareUrl string) ([]*VideoParseInfo, error) {
+func (k kuaiShou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	if len(shareUrl) <= 0 {
 		return nil, errors.New("video share url is empty")
 	}
