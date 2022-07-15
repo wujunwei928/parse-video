@@ -2,7 +2,6 @@ package parser
 
 import (
 	"bytes"
-	"errors"
 
 	"github.com/PuerkitoBio/goquery"
 
@@ -12,10 +11,6 @@ import (
 type zuiYou struct{}
 
 func (z zuiYou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
-	if len(shareUrl) <= 0 {
-		return nil, errors.New("video share url is empty")
-	}
-
 	client := resty.New()
 	res, err := client.R().
 		EnableTrace().
@@ -33,8 +28,8 @@ func (z zuiYou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	title := doc.Find(".SharePostCard__content h1").Text()
 
 	parseRes := &VideoParseInfo{
-		Desc:          title,
-		VideoPlayAddr: videoPlayAddr,
+		Title:    title,
+		VideoUrl: videoPlayAddr,
 	}
 
 	return parseRes, nil

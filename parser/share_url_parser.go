@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -11,21 +10,25 @@ var parseShareUrlMapping = map[string]videoShareUrlParser{
 	SourceKuaiShou: kuaiShou{},
 	SourceZuiYou:   zuiYou{},
 	SourceXiGua:    xiGua{},
+	SourcePiPiXia:  piPiXia{},
+	SourceWeiShi:   weiShi{},
+	SourceHuoShan:  huoShan{},
+	SourceLiShiPin: liShiPin{},
 }
 
 // 分享链接中, 域名和来源映射信息
 var shareUrlSourceDomainMapping = map[string]string{
-	SourceDouYin:   "douyin.com",
-	SourceKuaiShou: "kuaishou.com",
-	SourceZuiYou:   "xiaochuankeji.cn",
+	SourceDouYin:   "v.douyin.com",
+	SourceKuaiShou: "v.kuaishou.com",
+	SourceZuiYou:   "share.xiaochuankeji.cn",
 	SourceXiGua:    "v.ixigua.com",
+	SourcePiPiXia:  "h5.pipix.com",
+	SourceWeiShi:   "isee.weishi.qq.com",
+	SourceHuoShan:  "share.huoshan.com",
+	SourceLiShiPin: "www.pearvideo.com",
 }
 
 func ParseShareUrl(shareUrl string) (*VideoParseInfo, error) {
-	if len(shareUrl) <= 0 {
-		return nil, errors.New("video id or source is empty")
-	}
-
 	// 根据url判断source
 	source := ""
 	for itemSource, itemDomain := range shareUrlSourceDomainMapping {

@@ -31,11 +31,7 @@ type douYinRes struct {
 type douYin struct{}
 
 func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
-	if len(videoId) <= 0 {
-		return nil, errors.New("video id is empty")
-	}
-
-	parseList, err := d.MultiParseVideoID([]string{videoId})
+	parseList, err := d.multiParseVideoID([]string{videoId})
 	if err != nil {
 		return nil, err
 	}
@@ -47,10 +43,6 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 }
 
 func (d douYin) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
-	if len(shareUrl) <= 0 {
-		return nil, errors.New("video share url is empty")
-	}
-
 	client := resty.New()
 	client.SetRedirectPolicy(resty.NoRedirectPolicy())
 	res, _ := client.R().EnableTrace().Get(shareUrl)
@@ -69,11 +61,7 @@ func (d douYin) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	return d.parseVideoID(videoId)
 }
 
-func (d douYin) MultiParseVideoID(videoIds []string) ([]*VideoParseInfo, error) {
-	if len(videoIds) <= 0 {
-		return nil, errors.New("video ids is empty")
-	}
-
+func (d douYin) multiParseVideoID(videoIds []string) ([]*VideoParseInfo, error) {
 	// 支持多个videoId批量获取, 用逗号隔开
 	itemIds := strings.Join(videoIds, ",")
 	reqUrl := "https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/?item_ids=" + itemIds
@@ -93,9 +81,9 @@ func (d douYin) MultiParseVideoID(videoIds []string) ([]*VideoParseInfo, error) 
 		}
 		videoPlayAddr := strings.ReplaceAll(item.Video.PlayAddr.UrlList[0], "/playwm/", "/play/")
 		parseItem := &VideoParseInfo{
-			Desc:          item.Desc,
-			VideoPlayAddr: videoPlayAddr,
-			MusicPlayAddr: item.Music.PlayUrl.Uri,
+			Title:    item.Desc,
+			VideoUrl: videoPlayAddr,
+			MusicUrl: item.Music.PlayUrl.Uri,
 		}
 		parseList = append(parseList, parseItem)
 	}

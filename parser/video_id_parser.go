@@ -32,7 +32,7 @@ func BatchParseVideoId(source string, videoIds []string) ([]*VideoParseInfo, err
 
 	switch source {
 	case SourceDouYin:
-		return douYin{}.MultiParseVideoID(videoIds)
+		return douYin{}.multiParseVideoID(videoIds)
 	}
 
 	return nil, errors.New("source not support batch parse video id")

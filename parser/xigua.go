@@ -74,9 +74,9 @@ func (x xiGua) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	musicAddr, _ := base64.StdEncoding.DecodeString(musicAddrBase64)
 
 	parseRes := &VideoParseInfo{
-		Desc:          videoDesc,
-		VideoPlayAddr: string(videoAddr),
-		MusicPlayAddr: string(musicAddr),
+		Title:    videoDesc,
+		VideoUrl: string(videoAddr),
+		MusicUrl: string(musicAddr),
 	}
 
 	return parseRes, nil
