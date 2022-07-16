@@ -15,7 +15,9 @@ type piPiXia struct {
 func (p piPiXia) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	reqUrl := "https://is.snssdk.com/bds/cell/detail/?cell_type=1&aid=1319&app_name=super&cell_id=" + videoId
 	client := resty.New()
-	res, err := client.R().Get(reqUrl)
+	res, err := client.R().
+		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
+		Get(reqUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +43,9 @@ func (p piPiXia) parseVideoID(videoId string) (*VideoParseInfo, error) {
 func (p piPiXia) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	client := resty.New()
 	client.SetRedirectPolicy(resty.NoRedirectPolicy())
-	res, _ := client.R().EnableTrace().Get(shareUrl)
+	res, _ := client.R().
+		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
+		Get(shareUrl)
 	// 这里会返回err, auto redirect is disabled
 
 	locationRes, err := res.RawResponse.Location()

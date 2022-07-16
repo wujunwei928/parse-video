@@ -2,7 +2,6 @@ package parser
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 
 	"github.com/tidwall/gjson"
@@ -16,8 +15,9 @@ type weiShi struct {
 func (w weiShi) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	reqUrl := "https://h5.weishi.qq.com/webapp/json/weishi/WSH5GetPlayPage?feedid=" + videoId
 	client := resty.New()
-	res, err := client.R().Get(reqUrl)
-	fmt.Println("abc", string(res.Body()))
+	res, err := client.R().
+		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
+		Get(reqUrl)
 	if err != nil {
 		return nil, err
 	}

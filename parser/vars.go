@@ -1,5 +1,6 @@
 package parser
 
+// 视频渠道来源
 const (
 	SourceDouYin      = "douyin"
 	SourceKuaiShou    = "kuaishou"
@@ -16,6 +17,17 @@ const (
 	SourcePiPiGaoXiao = "pipigaoxiao"
 )
 
+// http 相关
+const (
+	HttpHeaderUserAgent   = "User-Agent" //http header
+	HttpHeaderReferer     = "Referer"
+	HttpHeaderContentType = "Content-Type"
+	HttpHeaderCookie      = "Cookie"
+
+	// DefaultUserAgent 默认UserAgent
+	DefaultUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1"
+)
+
 // videoShareUrlParser 根据视频分享地址解析
 type videoShareUrlParser interface {
 	parseShareUrl(shareUrl string) (*VideoParseInfo, error)
@@ -30,7 +42,7 @@ type videoIdParser interface {
 type VideoParseInfo struct {
 	Author struct {
 		Uid    string `json:"uid"`    // 作者id
-		Name   string `json:"title"`  // 作者名称
+		Name   string `json:"name"`   // 作者名称
 		Avatar string `json:"avatar"` // 作者头像
 	} `json:"author"`
 	Title    string `json:"title"`     // 描述

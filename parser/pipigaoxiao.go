@@ -15,8 +15,8 @@ type piPiGaoXiao struct {
 func (p piPiGaoXiao) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	reqUrl := "https://share.ippzone.com/ppapi/share/fetch_content"
 	headers := map[string]string{
-		"Referer":    reqUrl,
-		"User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36",
+		HttpHeaderReferer:   reqUrl,
+		HttpHeaderUserAgent: "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36",
 	}
 	postData := "{\"pid\":" + videoId + ",\"type\":\"post\",\"mid\":null}"
 

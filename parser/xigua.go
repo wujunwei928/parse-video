@@ -19,7 +19,9 @@ type xiGua struct {
 func (x xiGua) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	client := resty.New()
 	client.SetRedirectPolicy(resty.NoRedirectPolicy())
-	res, _ := client.R().EnableTrace().Get(shareUrl)
+	res, _ := client.R().
+		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
+		Get(shareUrl)
 	// 这里会返回err, auto redirect is disabled
 
 	locationRes, err := res.RawResponse.Location()
@@ -38,8 +40,8 @@ func (x xiGua) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 func (x xiGua) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	reqUrl := "https://www.ixigua.com/" + videoId
 	headers := map[string]string{
-		"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36",
-		"Cookie":     "cookie:MONITOR_WEB_ID=7892c49b-296e-4499-8704-e47c1b150c18; ixigua-a-s=1; ttcid=af99669b6304453480454f150701d5c226; BD_REF=1; __ac_nonce=060d88ff000a75e8d17eb; __ac_signature=_02B4Z6wo00f01kX9ZpgAAIDAKIBBQUIPYT5F2WIAAPG2ad; ttwid=1%7CcIsVF_3vqSIk4XErhPB0H2VaTxT0tdsTMRbMjrJOPN8%7C1624806049%7C08ce7dd6f7d20506a41ba0a331ef96a6505d96731e6ad9f6c8c709f53f227ab1",
+		HttpHeaderUserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36",
+		HttpHeaderCookie:    "MONITOR_WEB_ID=7892c49b-296e-4499-8704-e47c1b150c18; ixigua-a-s=1; ttcid=af99669b6304453480454f150701d5c226; BD_REF=1; __ac_nonce=060d88ff000a75e8d17eb; __ac_signature=_02B4Z6wo00f01kX9ZpgAAIDAKIBBQUIPYT5F2WIAAPG2ad; ttwid=1%7CcIsVF_3vqSIk4XErhPB0H2VaTxT0tdsTMRbMjrJOPN8%7C1624806049%7C08ce7dd6f7d20506a41ba0a331ef96a6505d96731e6ad9f6c8c709f53f227ab1",
 	}
 
 	client := resty.New()

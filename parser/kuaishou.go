@@ -14,7 +14,9 @@ type kuaiShou struct{}
 func (k kuaiShou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	client := resty.New()
 	client.SetRedirectPolicy(resty.NoRedirectPolicy())
-	res, _ := client.R().Get(shareUrl)
+	res, _ := client.R().
+		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
+		Get(shareUrl)
 	//这里会返回err, auto redirect is disabled
 
 	locationRes, err := res.RawResponse.Location()
@@ -33,9 +35,10 @@ func (k kuaiShou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 		"isLongVideo": false,
 	}
 	videoRes, err := client.R().
-		SetHeader("Cookie", "did=web_9bceee20fa5d4a968535a27e538bf51b; didv=1655992503000;").
-		SetHeader("Referer", referUri).
-		SetHeader("Content-Type", "application/json").
+		SetHeader(HttpHeaderCookie, "did=web_9bceee20fa5d4a968535a27e538bf51b; didv=1655992503000;").
+		SetHeader(HttpHeaderReferer, referUri).
+		SetHeader(HttpHeaderContentType, "application/json").
+		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
 		SetBody(postData).
 		Post("https://v.m.chenzhongtech.com/rest/wd/photo/info")
 

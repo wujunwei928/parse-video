@@ -18,8 +18,8 @@ type liShiPin struct {
 func (l liShiPin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	reqUrl := fmt.Sprintf("https://www.pearvideo.com/videoStatus.jsp?contId=%s&mrd=%d", videoId, time.Now().Unix())
 	headers := map[string]string{
-		"Referer":    fmt.Sprintf("https://www.pearvideo.com/detail_%s", videoId),
-		"User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36",
+		HttpHeaderReferer:   fmt.Sprintf("https://www.pearvideo.com/detail_%s", videoId),
+		HttpHeaderUserAgent: "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36",
 	}
 
 	client := resty.New()

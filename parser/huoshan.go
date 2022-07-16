@@ -14,7 +14,9 @@ type huoShan struct {
 func (h huoShan) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	reqUrl := "https://share.huoshan.com/api/item/info?item_id=" + videoId
 	client := resty.New()
-	res, err := client.R().Get(reqUrl)
+	res, err := client.R().
+		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
+		Get(reqUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +36,9 @@ func (h huoShan) parseVideoID(videoId string) (*VideoParseInfo, error) {
 func (h huoShan) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	client := resty.New()
 	client.SetRedirectPolicy(resty.NoRedirectPolicy())
-	res, _ := client.R().EnableTrace().Get(shareUrl)
+	res, _ := client.R().
+		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
+		Get(shareUrl)
 	// 这里会返回err, auto redirect is disabled
 
 	locationRes, err := res.RawResponse.Location()

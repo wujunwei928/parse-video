@@ -11,11 +11,23 @@ import (
 type douYinRes struct {
 	StatusCode int `json:"status_code"`
 	ItemList   []struct {
+		Author struct {
+			UniqueId     string `json:"unique_id"`
+			Nickname     string `json:"nickname"`
+			AvatarLarger struct {
+				UrlList []string `json:"url_list"`
+				Uri     string   `json:"uri"`
+			} `json:"avatar_larger"`
+		} `json:"author"`
 		Video struct {
 			PlayAddr struct {
 				UrlList []string `json:"url_list"`
 				Uri     string   `json:"uri"`
 			} `json:"play_addr"`
+			OriginCover struct {
+				Uri     string   `json:"uri"`
+				UrlList []string `json:"url_list"`
+			} `json:"origin_cover"`
 		} `json:"video"`
 		Music struct {
 			Title   string `json:"title"`
@@ -24,7 +36,12 @@ type douYinRes struct {
 				UrlList []string `json:"url_list"`
 			} `json:"play_url"`
 		} `json:"music"`
-		Desc string `json:"desc"`
+		Desc      string `json:"desc"`
+		ShareInfo struct {
+			ShareWeiboDesc string `json:"share_weibo_desc"`
+			ShareDesc      string `json:"share_desc"`
+			ShareTitle     string `json:"share_title"`
+		} `json:"share_info"`
 	} `json:"item_list"`
 }
 
@@ -45,7 +62,9 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 func (d douYin) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	client := resty.New()
 	client.SetRedirectPolicy(resty.NoRedirectPolicy())
-	res, _ := client.R().EnableTrace().Get(shareUrl)
+	res, _ := client.R().
+		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
+		Get(shareUrl)
 	// 这里会返回err, auto redirect is disabled
 
 	locationRes, err := res.RawResponse.Location()
@@ -66,7 +85,9 @@ func (d douYin) multiParseVideoID(videoIds []string) ([]*VideoParseInfo, error) 
 	itemIds := strings.Join(videoIds, ",")
 	reqUrl := "https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/?item_ids=" + itemIds
 	client := resty.New()
-	res, err := client.R().Get(reqUrl)
+	res, err := client.R().
+		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
+		Get(reqUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -81,10 +102,15 @@ func (d douYin) multiParseVideoID(videoIds []string) ([]*VideoParseInfo, error) 
 		}
 		videoPlayAddr := strings.ReplaceAll(item.Video.PlayAddr.UrlList[0], "/playwm/", "/play/")
 		parseItem := &VideoParseInfo{
-			Title:    item.Desc,
+			Title:    item.ShareInfo.ShareWeiboDesc,
 			VideoUrl: videoPlayAddr,
 			MusicUrl: item.Music.PlayUrl.Uri,
+			CoverUrl: item.Video.OriginCover.UrlList[0],
 		}
+		parseItem.Author.Uid = item.Author.UniqueId
+		parseItem.Author.Name = item.Author.Nickname
+		parseItem.Author.Avatar = item.Author.AvatarLarger.UrlList[0]
+
 		parseList = append(parseList, parseItem)
 	}
 

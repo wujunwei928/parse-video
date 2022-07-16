@@ -13,7 +13,7 @@ type zuiYou struct{}
 func (z zuiYou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	client := resty.New()
 	res, err := client.R().
-		EnableTrace().
+		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
 		Get(shareUrl)
 	if err != nil {
 		return nil, err
