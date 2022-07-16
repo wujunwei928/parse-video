@@ -21,7 +21,7 @@ func main() {
 		urlReg := regexp.MustCompile(`https?:\/\/\S+`)
 		videoShareUrl := urlReg.FindString(c.Query("url"))
 
-		parseRes, _ := parser.ParseShareUrl(videoShareUrl)
+		parseRes, _ := parser.ParseVideoShareUrl(videoShareUrl)
 
 		c.JSONP(http.StatusOK, parseRes)
 	})

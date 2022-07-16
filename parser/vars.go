@@ -38,3 +38,57 @@ type VideoParseInfo struct {
 	MusicUrl string `json:"music_url"` // 音乐播放地址
 	CoverUrl string `json:"cover_url"` // 视频封面地址
 }
+
+// 视频渠道信息
+type videoSourceInfo struct {
+	VideoShareUrlDomain string              // 视频分享地址域名
+	VideoShareUrlParser videoShareUrlParser // 视频分享地址解析方法
+	VideoIdParser       videoIdParser       // 视频id解析方法, 有些渠道可能没有id解析方法
+}
+
+// 视频渠道映射信息
+var videoSourceInfoMapping = map[string]videoSourceInfo{
+	SourceDouYin: {
+		VideoShareUrlDomain: "v.douyin.com",
+		VideoShareUrlParser: douYin{},
+		VideoIdParser:       douYin{},
+	},
+	SourceKuaiShou: {
+		VideoShareUrlDomain: "v.kuaishou.com",
+		VideoShareUrlParser: kuaiShou{},
+	},
+	SourceZuiYou: {
+		VideoShareUrlDomain: "share.xiaochuankeji.cn",
+		VideoShareUrlParser: zuiYou{},
+	},
+	SourceXiGua: {
+		VideoShareUrlDomain: "v.ixigua.com",
+		VideoShareUrlParser: xiGua{},
+		VideoIdParser:       xiGua{},
+	},
+	SourcePiPiXia: {
+		VideoShareUrlDomain: "h5.pipix.com",
+		VideoShareUrlParser: piPiXia{},
+		VideoIdParser:       piPiXia{},
+	},
+	SourceWeiShi: {
+		VideoShareUrlDomain: "isee.weishi.qq.com",
+		VideoShareUrlParser: weiShi{},
+		VideoIdParser:       weiShi{},
+	},
+	SourceHuoShan: {
+		VideoShareUrlDomain: "share.huoshan.com",
+		VideoShareUrlParser: huoShan{},
+		VideoIdParser:       huoShan{},
+	},
+	SourceLiShiPin: {
+		VideoShareUrlDomain: "www.pearvideo.com",
+		VideoShareUrlParser: liShiPin{},
+		VideoIdParser:       liShiPin{},
+	},
+	SourcePiPiGaoXiao: {
+		VideoShareUrlDomain: "h5.pipigx.com",
+		VideoShareUrlParser: piPiGaoXiao{},
+		VideoIdParser:       piPiGaoXiao{},
+	},
+}

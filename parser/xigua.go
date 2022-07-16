@@ -17,10 +17,6 @@ type xiGua struct {
 }
 
 func (x xiGua) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
-	if len(shareUrl) <= 0 {
-		return nil, errors.New("video share url is empty")
-	}
-
 	client := resty.New()
 	client.SetRedirectPolicy(resty.NoRedirectPolicy())
 	res, _ := client.R().EnableTrace().Get(shareUrl)
@@ -40,10 +36,6 @@ func (x xiGua) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 }
 
 func (x xiGua) parseVideoID(videoId string) (*VideoParseInfo, error) {
-	if len(videoId) <= 0 {
-		return nil, errors.New("video id is empty")
-	}
-
 	reqUrl := "https://www.ixigua.com/" + videoId
 	headers := map[string]string{
 		"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36",
