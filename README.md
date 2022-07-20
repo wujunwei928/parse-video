@@ -22,7 +22,10 @@ docker pull wujunwei928/parse-video
 docker run -d -p 8080:8080 wujunwei928/parse-video
 ```
 
-请求接口, 查看返回
+查看前端页面  
+访问: http://127.0.0.1:8080/  
+
+请求接口, 查看json返回
 ```bash
 curl 'http://127.0.0.1:8080/video/share/url/parse?url=视频分享链接' | jq
 ```
