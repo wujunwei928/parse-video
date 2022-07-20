@@ -103,4 +103,9 @@ var videoSourceInfoMapping = map[string]videoSourceInfo{
 		VideoShareUrlParser: piPiGaoXiao{},
 		VideoIdParser:       piPiGaoXiao{},
 	},
+	SourceQuanMin: {
+		VideoShareUrlDomain: "xspshare.baidu.com",
+		VideoShareUrlParser: quanMin{},
+		VideoIdParser:       quanMin{},
+	},
 }
