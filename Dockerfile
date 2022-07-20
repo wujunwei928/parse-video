@@ -24,6 +24,7 @@ ENV TZ Asia/Shanghai
 
 WORKDIR /app
 COPY --from=builder /app/main /app/main
+COPY templates /app/templates
 
 EXPOSE 8080
 

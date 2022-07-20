@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -14,16 +15,40 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type HttpResponse struct {
+	Code int         `json:"code"`
+	Msg  string      `json:"msg"`
+	Data interface{} `json:"data"`
+}
+
 func main() {
 	r := gin.Default()
 
+	r.LoadHTMLGlob("templates/*")
+	r.GET("/", func(c *gin.Context) {
+		c.HTML(200, "index.tmpl", gin.H{
+			"title": "github.com/wujunwei928/parse-video Demo",
+		})
+	})
+
 	r.GET("/video/share/url/parse", func(c *gin.Context) {
-		urlReg := regexp.MustCompile(`https?:\/\/\S+`)
+		urlReg := regexp.MustCompile(`http[s]?:\/\/[\w.]+[\w\/]*[\w.]*\??[\w=&:\-\+\%]*[/]*`)
 		videoShareUrl := urlReg.FindString(c.Query("url"))
+		fmt.Println("123", videoShareUrl)
 
-		parseRes, _ := parser.ParseVideoShareUrl(videoShareUrl)
+		parseRes, err := parser.ParseVideoShareUrl(videoShareUrl)
+		if err != nil {
+			c.JSON(http.StatusOK, HttpResponse{
+				Code: 201,
+				Msg:  "解析失败",
+			})
+		}
 
-		c.JSONP(http.StatusOK, parseRes)
+		c.JSON(http.StatusOK, HttpResponse{
+			Code: 200,
+			Msg:  "解析成功",
+			Data: parseRes,
+		})
 	})
 
 	r.GET("/video/id/parse", func(c *gin.Context) {
@@ -32,10 +57,17 @@ func main() {
 
 		parseRes, err := parser.ParseVideoId(videoId, source)
 		if err != nil {
-			c.JSON(500, err.Error())
+			c.JSON(http.StatusOK, HttpResponse{
+				Code: 201,
+				Msg:  "解析失败",
+			})
 		}
 
-		c.JSON(200, parseRes)
+		c.JSON(200, HttpResponse{
+			Code: 200,
+			Msg:  "解析成功",
+			Data: parseRes,
+		})
 	})
 
 	srv := &http.Server{
