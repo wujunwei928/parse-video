@@ -15,6 +15,7 @@ const (
 	SourceXiGua       = "xigua"
 	SourceLiShiPin    = "lishipin"
 	SourcePiPiGaoXiao = "pipigaoxiao"
+	SourceHuYa        = "huya"
 )
 
 // http 相关
@@ -107,5 +108,10 @@ var videoSourceInfoMapping = map[string]videoSourceInfo{
 		VideoShareUrlDomain: "xspshare.baidu.com",
 		VideoShareUrlParser: quanMin{},
 		VideoIdParser:       quanMin{},
+	},
+	SourceHuYa: {
+		VideoShareUrlDomain: "liveapi.huya.com",
+		VideoShareUrlParser: huYa{},
+		VideoIdParser:       huYa{},
 	},
 }
