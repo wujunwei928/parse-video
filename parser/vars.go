@@ -16,6 +16,7 @@ const (
 	SourceLiShiPin    = "lishipin"
 	SourcePiPiGaoXiao = "pipigaoxiao"
 	SourceHuYa        = "huya"
+	SourceAcFun       = "acfun"
 )
 
 // http 相关
@@ -113,5 +114,10 @@ var videoSourceInfoMapping = map[string]videoSourceInfo{
 		VideoShareUrlDomain: "liveapi.huya.com",
 		VideoShareUrlParser: huYa{},
 		VideoIdParser:       huYa{},
+	},
+	SourceAcFun: {
+		VideoShareUrlDomain: "www.acfun.cn",
+		VideoShareUrlParser: acFun{},
+		VideoIdParser:       acFun{},
 	},
 }
