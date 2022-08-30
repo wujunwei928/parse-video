@@ -2,7 +2,6 @@ package parser
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 
 	"github.com/go-resty/resty/v2"
@@ -38,7 +37,6 @@ func (h huYa) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		return nil, err
 	}
 	videoData := gjson.GetBytes(res.Body(), "data.moment.videoInfo")
-	fmt.Println(string(res.Body()))
 	parseRes := &VideoParseInfo{
 		Title:    videoData.Get("videoTitle").String(),
 		VideoUrl: videoData.Get("definitions.0.url").String(),

@@ -111,7 +111,7 @@ var videoSourceInfoMapping = map[string]videoSourceInfo{
 		VideoIdParser:       quanMin{},
 	},
 	SourceHuYa: {
-		VideoShareUrlDomain: "liveapi.huya.com",
+		VideoShareUrlDomain: "v.huya.com",
 		VideoShareUrlParser: huYa{},
 		VideoIdParser:       huYa{},
 	},
