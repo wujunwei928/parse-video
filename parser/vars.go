@@ -2,21 +2,25 @@ package parser
 
 // 视频渠道来源
 const (
-	SourceDouYin      = "douyin"
-	SourceKuaiShou    = "kuaishou"
-	SourcePiPiXia     = "pipixia"
-	SourceHuoShan     = "huoshan"
-	SourceWeiBo       = "weibo"
-	SourceWeiShi      = "weishi"
-	SourceLvZhou      = "lvzhou"
-	SourceZuiYou      = "zuiyou"
-	SourceBBQ         = "bbq"
-	SourceQuanMin     = "quanmin"
-	SourceXiGua       = "xigua"
-	SourceLiShiPin    = "lishipin"
-	SourcePiPiGaoXiao = "pipigaoxiao"
-	SourceHuYa        = "huya"
-	SourceAcFun       = "acfun"
+	SourceDouYin       = "douyin"       // 抖音
+	SourceKuaiShou     = "kuaishou"     // 快手
+	SourcePiPiXia      = "pipixia"      // 皮皮虾
+	SourceHuoShan      = "huoshan"      // 火山
+	SourceWeiBo        = "weibo"        // 微博
+	SourceWeiShi       = "weishi"       // 微视
+	SourceLvZhou       = "lvzhou"       // 绿洲
+	SourceZuiYou       = "zuiyou"       // 最右
+	SourceQuanMin      = "quanmin"      // 度小视(原 全民小视频)
+	SourceXiGua        = "xigua"        // 西瓜
+	SourceLiShiPin     = "lishipin"     // 梨视频
+	SourcePiPiGaoXiao  = "pipigaoxiao"  // 皮皮搞笑
+	SourceHuYa         = "huya"         // 虎牙
+	SourceAcFun        = "acfun"        // A站
+	SourceDouPai       = "doupai"       // 逗拍
+	SourceMeiPai       = "meipai"       // 美拍
+	SourceQuanMinKGe   = "quanminkge"   // 全民K歌
+	SourceSixRoom      = "sixroom"      // 六间房
+	SourceXinPianChang = "xinpianchang" // 新片场
 )
 
 // http 相关
@@ -119,5 +123,39 @@ var videoSourceInfoMapping = map[string]videoSourceInfo{
 		VideoShareUrlDomain: "www.acfun.cn",
 		VideoShareUrlParser: acFun{},
 		VideoIdParser:       acFun{},
+	},
+	SourceWeiBo: {
+		VideoShareUrlDomain: "weibo.com",
+		VideoShareUrlParser: weiBo{},
+		VideoIdParser:       weiBo{},
+	},
+	SourceLvZhou: {
+		VideoShareUrlDomain: "weibo.cn",
+		VideoShareUrlParser: lvZhou{},
+		VideoIdParser:       lvZhou{},
+	},
+	//SourceMeiPai: {
+	//	VideoShareUrlDomain: "meipai.com",
+	//	VideoShareUrlParser: meiPai{},
+	//	VideoIdParser:       meiPai{},
+	//},
+	SourceDouPai: {
+		VideoShareUrlDomain: "doupai.cc",
+		VideoShareUrlParser: douPai{},
+		VideoIdParser:       douPai{},
+	},
+	SourceQuanMinKGe: {
+		VideoShareUrlDomain: "kg.qq.com",
+		VideoShareUrlParser: quanMinKGe{},
+		VideoIdParser:       quanMinKGe{},
+	},
+	SourceSixRoom: {
+		VideoShareUrlDomain: "6.cn",
+		VideoShareUrlParser: sixRoom{},
+		VideoIdParser:       sixRoom{},
+	},
+	SourceXinPianChang: {
+		VideoShareUrlDomain: "xinpianchang.com",
+		VideoShareUrlParser: xinPianChang{},
 	},
 }
