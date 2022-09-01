@@ -134,11 +134,11 @@ var videoSourceInfoMapping = map[string]videoSourceInfo{
 		VideoShareUrlParser: lvZhou{},
 		VideoIdParser:       lvZhou{},
 	},
-	//SourceMeiPai: {
-	//	VideoShareUrlDomain: "meipai.com",
-	//	VideoShareUrlParser: meiPai{},
-	//	VideoIdParser:       meiPai{},
-	//},
+	SourceMeiPai: {
+		VideoShareUrlDomain: "meipai.com",
+		VideoShareUrlParser: meiPai{},
+		VideoIdParser:       meiPai{},
+	},
 	SourceDouPai: {
 		VideoShareUrlDomain: "doupai.cc",
 		VideoShareUrlParser: douPai{},
