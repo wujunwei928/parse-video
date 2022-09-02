@@ -21,6 +21,7 @@ const (
 	SourceQuanMinKGe   = "quanminkge"   // 全民K歌
 	SourceSixRoom      = "sixroom"      // 六间房
 	SourceXinPianChang = "xinpianchang" // 新片场
+	SourceHaoKan       = "haokan"       // 好看视频
 )
 
 // http 相关
@@ -157,5 +158,10 @@ var videoSourceInfoMapping = map[string]videoSourceInfo{
 	SourceXinPianChang: {
 		VideoShareUrlDomain: "xinpianchang.com",
 		VideoShareUrlParser: xinPianChang{},
+	},
+	SourceHaoKan: {
+		VideoShareUrlDomain: "haokan.baidu.com",
+		VideoShareUrlParser: haoKan{},
+		VideoIdParser:       haoKan{},
 	},
 }
