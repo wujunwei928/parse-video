@@ -23,9 +23,13 @@ func (k kuaiShou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// 分享的中间跳转链接不太一样, 有些是 /fw/long-video , 有些 /fw/photo
 	referUri := strings.ReplaceAll(locationRes.String(), "v.m.chenzhongtech.com/fw/long-video", "video.kuaishou.com/video")
+	referUri = strings.ReplaceAll(referUri, "v.m.chenzhongtech.com/fw/photo", "video.kuaishou.com/video")
 
 	videoId := strings.ReplaceAll(strings.Trim(locationRes.Path, "/"), "fw/long-video/", "")
+	videoId = strings.ReplaceAll(videoId, "fw/photo/", "")
 	if len(videoId) <= 0 {
 		return nil, errors.New("parse video id from share url fail")
 	}

@@ -61,9 +61,16 @@ func (x xiGua) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	ssrJson = strings.ReplaceAll(ssrJson, "undefined", "null")
 
 	videoData := gjson.Get(ssrJson, "anyVideo.gidInformation.packerData.video")
+	userId := videoData.Get("user_info.user_id").String()
+	userName := videoData.Get("user_info.name").String()
+	userAvatar := videoData.Get("user_info.avatar_url").String()
 	videoDesc := videoData.Get("title").String()
 	videoAddrBase64 := videoData.Get("videoResource.dash.dynamic_video.dynamic_video_list.2.main_url").String()
 	musicAddrBase64 := videoData.Get("videoResource.dash.dynamic_video.dynamic_audio_list.0.main_url").String()
+	if len(videoAddrBase64) <= 0 {
+		// 部分视频返回数据videoResource.dash为空, 改用 videoResource.normal 数据
+		videoAddrBase64 = videoData.Get("videoResource.normal.video_list.video_1.main_url").String()
+	}
 	videoAddr, _ := base64.StdEncoding.DecodeString(videoAddrBase64)
 	musicAddr, _ := base64.StdEncoding.DecodeString(musicAddrBase64)
 
@@ -72,6 +79,9 @@ func (x xiGua) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		VideoUrl: string(videoAddr),
 		MusicUrl: string(musicAddr),
 	}
+	parseRes.Author.Uid = userId
+	parseRes.Author.Name = userName
+	parseRes.Author.Avatar = userAvatar
 
 	return parseRes, nil
 }
