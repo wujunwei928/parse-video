@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -32,23 +31,24 @@ func main() {
 	})
 
 	r.GET("/video/share/url/parse", func(c *gin.Context) {
-		urlReg := regexp.MustCompile(`http[s]?:\/\/[\w.]+[\w\/]*[\w.]*\??[\w=&:\-\+\%]*[/]*`)
+		urlReg := regexp.MustCompile(`http[s]?:\/\/[\w.-]+[\w\/-]*[\w.-]*\??[\w=&:\-\+\%]*[/]*`)
 		videoShareUrl := urlReg.FindString(c.Query("url"))
-		fmt.Println("123", videoShareUrl)
+		//fmt.Println("123", videoShareUrl, c.Query("url"))
 
 		parseRes, err := parser.ParseVideoShareUrl(videoShareUrl)
-		if err != nil {
-			c.JSON(http.StatusOK, HttpResponse{
-				Code: 201,
-				Msg:  "解析失败",
-			})
-		}
-
-		c.JSON(http.StatusOK, HttpResponse{
+		jsonRes := HttpResponse{
 			Code: 200,
 			Msg:  "解析成功",
 			Data: parseRes,
-		})
+		}
+		if err != nil {
+			jsonRes = HttpResponse{
+				Code: 201,
+				Msg:  "解析失败",
+			}
+		}
+
+		c.JSON(http.StatusOK, jsonRes)
 	})
 
 	r.GET("/video/id/parse", func(c *gin.Context) {

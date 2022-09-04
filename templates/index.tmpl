@@ -89,7 +89,7 @@
 <script>
 function  setValue(){
     var data =  document.getElementById("url").value;
-    let regex = /http[s]?:\/\/[\w.]+[\w\/]*[\w.]*\??[\w=&:\-\+\%]*[/]*/;
+    let regex = /http[s]?:\/\/[\w.-]+[\w\/-]*[\w.-]*\??[\w=&:\-\+\%]*[/]*/;
     var v =  data.match(regex)[0];
     console.log(v);
 
@@ -106,8 +106,7 @@ function  setValue(){
     xmlhttp.send();
     var jsonObj = JSON.parse(xmlhttp.responseText);
     console.log(jsonObj);
-    var code = jsonObj.data.url;
-    if(code !== null){
+    if(jsonObj.code == 200){
         mdui.snackbar({
             message: '解析成功'
         });
