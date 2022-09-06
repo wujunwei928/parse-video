@@ -56,18 +56,19 @@ func main() {
 		source := c.Query("source")
 
 		parseRes, err := parser.ParseVideoId(videoId, source)
-		if err != nil {
-			c.JSON(http.StatusOK, HttpResponse{
-				Code: 201,
-				Msg:  "解析失败",
-			})
-		}
-
-		c.JSON(200, HttpResponse{
+		jsonRes := HttpResponse{
 			Code: 200,
 			Msg:  "解析成功",
 			Data: parseRes,
-		})
+		}
+		if err != nil {
+			jsonRes = HttpResponse{
+				Code: 201,
+				Msg:  "解析失败",
+			}
+		}
+
+		c.JSON(200, jsonRes)
 	})
 
 	srv := &http.Server{

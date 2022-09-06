@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"sync"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -114,5 +115,33 @@ func (d douYin) multiParseVideoID(videoIds []string) ([]*VideoParseInfo, error) 
 		parseList = append(parseList, parseItem)
 	}
 
+	d.getRedirectUrl(&parseList)
+
 	return parseList, nil
+}
+
+func (d douYin) getRedirectUrl(videoInfoList *[]*VideoParseInfo) {
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	for i, item := range *videoInfoList {
+		wg.Add(1)
+		index := i
+		go func(strUrl string) {
+			defer wg.Done()
+
+			client := resty.New()
+			client.SetRedirectPolicy(resty.NoRedirectPolicy())
+			res2, _ := client.R().
+				SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
+				Get(strUrl)
+			locationRes, _ := res2.RawResponse.Location()
+			if locationRes != nil {
+				mu.Lock()
+				(*videoInfoList)[index].VideoUrl = locationRes.String()
+				mu.Unlock()
+			}
+		}(item.VideoUrl)
+	}
+
+	wg.Wait()
 }
