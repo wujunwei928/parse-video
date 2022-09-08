@@ -58,6 +58,12 @@ type VideoParseInfo struct {
 	CoverUrl string `json:"cover_url"` // 视频封面地址
 }
 
+// BatchParseItem 批量解析时, 单条解析格式
+type BatchParseItem struct {
+	ParseInfo *VideoParseInfo // 视频解析信息
+	Error     error           // 错误, 如果单条解析失败时, 记录error信息
+}
+
 // 视频渠道信息
 type videoSourceInfo struct {
 	VideoShareUrlDomain string              // 视频分享地址域名

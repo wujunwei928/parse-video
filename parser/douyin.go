@@ -38,6 +38,7 @@ type douYinRes struct {
 			} `json:"play_url"`
 		} `json:"music"`
 		Desc      string `json:"desc"`
+		AwemeId   string `json:"aweme_id"`
 		ShareInfo struct {
 			ShareWeiboDesc string `json:"share_weibo_desc"`
 			ShareDesc      string `json:"share_desc"`
@@ -49,15 +50,15 @@ type douYinRes struct {
 type douYin struct{}
 
 func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
-	parseList, err := d.multiParseVideoID([]string{videoId})
+	parseMap, err := d.batchParseVideoID([]string{videoId})
 	if err != nil {
 		return nil, err
 	}
-	if len(parseList) <= 0 {
+	if _, ok := parseMap[videoId]; !ok {
 		return nil, errors.New("has no parse info")
 	}
 
-	return parseList[0], nil
+	return parseMap[videoId].ParseInfo, nil
 }
 
 func (d douYin) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
@@ -81,7 +82,7 @@ func (d douYin) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	return d.parseVideoID(videoId)
 }
 
-func (d douYin) multiParseVideoID(videoIds []string) ([]*VideoParseInfo, error) {
+func (d douYin) batchParseVideoID(videoIds []string) (map[string]BatchParseItem, error) {
 	// 支持多个videoId批量获取, 用逗号隔开
 	itemIds := strings.Join(videoIds, ",")
 	reqUrl := "https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/?item_ids=" + itemIds
@@ -96,7 +97,7 @@ func (d douYin) multiParseVideoID(videoIds []string) ([]*VideoParseInfo, error) 
 	douYinRes := &douYinRes{}
 	json.Unmarshal(res.Body(), douYinRes)
 
-	parseList := make([]*VideoParseInfo, 0, len(douYinRes.ItemList))
+	parseList := make(map[string]BatchParseItem, len(douYinRes.ItemList))
 	for _, item := range douYinRes.ItemList {
 		if len(item.Video.PlayAddr.UrlList) <= 0 {
 			continue
@@ -112,20 +113,23 @@ func (d douYin) multiParseVideoID(videoIds []string) ([]*VideoParseInfo, error) 
 		parseItem.Author.Name = item.Author.Nickname
 		parseItem.Author.Avatar = item.Author.AvatarLarger.UrlList[0]
 
-		parseList = append(parseList, parseItem)
+		parseList[item.AwemeId] = BatchParseItem{
+			ParseInfo: parseItem,
+		}
 	}
 
-	d.getRedirectUrl(&parseList)
+	d.getRedirectUrl(parseList)
 
 	return parseList, nil
 }
 
-func (d douYin) getRedirectUrl(videoInfoList *[]*VideoParseInfo) {
+// 获取重定向后的链接
+func (d douYin) getRedirectUrl(videoInfoMap map[string]BatchParseItem) {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
-	for i, item := range *videoInfoList {
+	for id, item := range videoInfoMap {
 		wg.Add(1)
-		index := i
+		videoId := id
 		go func(strUrl string) {
 			defer wg.Done()
 
@@ -137,10 +141,10 @@ func (d douYin) getRedirectUrl(videoInfoList *[]*VideoParseInfo) {
 			locationRes, _ := res2.RawResponse.Location()
 			if locationRes != nil {
 				mu.Lock()
-				(*videoInfoList)[index].VideoUrl = locationRes.String()
+				videoInfoMap[videoId].ParseInfo.VideoUrl = locationRes.String()
 				mu.Unlock()
 			}
-		}(item.VideoUrl)
+		}(item.ParseInfo.VideoUrl)
 	}
 
 	wg.Wait()
