@@ -1,64 +1,41 @@
 package parser
 
 import (
-	"encoding/json"
 	"errors"
 	"strings"
-	"sync"
+
+	"github.com/tidwall/gjson"
 
 	"github.com/go-resty/resty/v2"
 )
 
-type douYinRes struct {
-	StatusCode int `json:"status_code"`
-	ItemList   []struct {
-		Author struct {
-			UniqueId     string `json:"unique_id"`
-			Nickname     string `json:"nickname"`
-			AvatarLarger struct {
-				UrlList []string `json:"url_list"`
-				Uri     string   `json:"uri"`
-			} `json:"avatar_larger"`
-		} `json:"author"`
-		Video struct {
-			PlayAddr struct {
-				UrlList []string `json:"url_list"`
-				Uri     string   `json:"uri"`
-			} `json:"play_addr"`
-			OriginCover struct {
-				Uri     string   `json:"uri"`
-				UrlList []string `json:"url_list"`
-			} `json:"origin_cover"`
-		} `json:"video"`
-		Music struct {
-			Title   string `json:"title"`
-			PlayUrl struct {
-				Uri     string   `json:"uri"`
-				UrlList []string `json:"url_list"`
-			} `json:"play_url"`
-		} `json:"music"`
-		Desc      string `json:"desc"`
-		AwemeId   string `json:"aweme_id"`
-		ShareInfo struct {
-			ShareWeiboDesc string `json:"share_weibo_desc"`
-			ShareDesc      string `json:"share_desc"`
-			ShareTitle     string `json:"share_title"`
-		} `json:"share_info"`
-	} `json:"item_list"`
-}
-
 type douYin struct{}
 
 func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
-	parseMap, err := d.batchParseVideoID([]string{videoId})
+	reqUrl := "https://www.iesdouyin.com/aweme/v1/web/aweme/detail/?aweme_id=" + videoId
+	client := resty.New()
+	res, err := client.R().
+		SetHeader(HttpHeaderCookie, "ttwid=1%7Cg3mkQ4zWpDIHPZhitKABkAlgY7wYIjXaL-dKPKq9Gik%7C1676131262%7C4393576ad4aae2ab8091a2fb6ad679c882851c313c3f1f18418dacd779d34fd5; __ac_nonce=063e8a51e00246bd7927b; __ac_signature=_02B4Z6wo00f0130dUGgAAIDCiGK69KnZR.d9PVTAALy72e; msToken=Pjd8tqkk_5DcDHCu1SPENat04F4ReGou6-ooN4L9Zxw-rnq0JzMj-OnNZ90k2e79Ccu1Zr_FagheEFg8GULPVXBFHNVtFO_1bZbExqyo0Ic=; s_v_web_id=verify_le153mts_CjtZAjYN_VDN0_42E1_BONz_W9Q42yHSntOm; msToken=0e9rBOId2Tk1RhlLE0W0v5w2Tmw0WX_Fsea1MfUBW2E6G8kerGIOVO8VzTreSlf1SPgsVqRNZ7PEHPEmZzRykwQElZKH90zxwGUh05dmB20al3UFlfBV; ttcid=0886122963064dd2a054ba4dcedf61c537; tt_scid=1sT1CdTVVMLIJePCKOxMPLvSFDeEmNLPvDHT14XwEoNDPwjZO2GA97Oqq5Eipkk2aa1c").
+		SetHeader(HttpHeaderUserAgent, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.41").
+		SetHeader("authority", "www.iesdouyin.com").
+		Get(reqUrl)
 	if err != nil {
 		return nil, err
 	}
-	if _, ok := parseMap[videoId]; !ok {
-		return nil, errors.New("has no parse info")
-	}
 
-	return parseMap[videoId].ParseInfo, nil
+	data := gjson.GetBytes(res.Body(), "aweme_detail")
+
+	videoInfo := &VideoParseInfo{
+		Title:    data.Get("desc").String(),
+		VideoUrl: data.Get("video.play_addr.url_list.0").String(),
+		MusicUrl: data.Get("music.play_url.url_list.0").String(),
+		CoverUrl: data.Get("video.origin_cover.url_list.0").String(),
+	}
+	videoInfo.Author.Uid = data.Get("author.unique_id").String()
+	videoInfo.Author.Name = data.Get("author.nickname").String()
+	videoInfo.Author.Avatar = data.Get("music.avatar_large.url_list.0").String()
+
+	return videoInfo, nil
 }
 
 func (d douYin) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
@@ -80,72 +57,4 @@ func (d douYin) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	}
 
 	return d.parseVideoID(videoId)
-}
-
-func (d douYin) batchParseVideoID(videoIds []string) (map[string]BatchParseItem, error) {
-	// 支持多个videoId批量获取, 用逗号隔开
-	itemIds := strings.Join(videoIds, ",")
-	reqUrl := "https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/?item_ids=" + itemIds
-	client := resty.New()
-	res, err := client.R().
-		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
-		Get(reqUrl)
-	if err != nil {
-		return nil, err
-	}
-
-	douYinRes := &douYinRes{}
-	json.Unmarshal(res.Body(), douYinRes)
-
-	parseList := make(map[string]BatchParseItem, len(douYinRes.ItemList))
-	for _, item := range douYinRes.ItemList {
-		if len(item.Video.PlayAddr.UrlList) <= 0 {
-			continue
-		}
-		videoPlayAddr := strings.ReplaceAll(item.Video.PlayAddr.UrlList[0], "/playwm/", "/play/")
-		parseItem := &VideoParseInfo{
-			Title:    item.ShareInfo.ShareWeiboDesc,
-			VideoUrl: videoPlayAddr,
-			MusicUrl: item.Music.PlayUrl.Uri,
-			CoverUrl: item.Video.OriginCover.UrlList[0],
-		}
-		parseItem.Author.Uid = item.Author.UniqueId
-		parseItem.Author.Name = item.Author.Nickname
-		parseItem.Author.Avatar = item.Author.AvatarLarger.UrlList[0]
-
-		parseList[item.AwemeId] = BatchParseItem{
-			ParseInfo: parseItem,
-		}
-	}
-
-	d.getRedirectUrl(parseList)
-
-	return parseList, nil
-}
-
-// 获取重定向后的链接
-func (d douYin) getRedirectUrl(videoInfoMap map[string]BatchParseItem) {
-	var wg sync.WaitGroup
-	var mu sync.Mutex
-	for id, item := range videoInfoMap {
-		wg.Add(1)
-		videoId := id
-		go func(strUrl string) {
-			defer wg.Done()
-
-			client := resty.New()
-			client.SetRedirectPolicy(resty.NoRedirectPolicy())
-			res2, _ := client.R().
-				SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
-				Get(strUrl)
-			locationRes, _ := res2.RawResponse.Location()
-			if locationRes != nil {
-				mu.Lock()
-				videoInfoMap[videoId].ParseInfo.VideoUrl = locationRes.String()
-				mu.Unlock()
-			}
-		}(item.ParseInfo.VideoUrl)
-	}
-
-	wg.Wait()
 }
