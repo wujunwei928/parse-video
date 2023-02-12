@@ -25,8 +25,8 @@ func (k kuaiShou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	}
 
 	// 分享的中间跳转链接不太一样, 有些是 /fw/long-video , 有些 /fw/photo
-	referUri := strings.ReplaceAll(locationRes.String(), "v.m.chenzhongtech.com/fw/long-video", "video.kuaishou.com/video")
-	referUri = strings.ReplaceAll(referUri, "v.m.chenzhongtech.com/fw/photo", "video.kuaishou.com/video")
+	referUri := strings.ReplaceAll(locationRes.String(), "v.m.chenzhongtech.com/fw/long-video", "m.gifshow.com/fw/photo")
+	referUri = strings.ReplaceAll(referUri, "v.m.chenzhongtech.com/fw/photo", "m.gifshow.com/fw/photo")
 
 	videoId := strings.ReplaceAll(strings.Trim(locationRes.Path, "/"), "fw/long-video/", "")
 	videoId = strings.ReplaceAll(videoId, "fw/photo/", "")
@@ -39,12 +39,13 @@ func (k kuaiShou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 		"isLongVideo": false,
 	}
 	videoRes, err := client.R().
-		SetHeader(HttpHeaderCookie, "did=web_9bceee20fa5d4a968535a27e538bf51b; didv=1655992503000;").
-		SetHeader(HttpHeaderReferer, referUri).
+		SetHeader(HttpHeaderCookie, "_did=web_4611110883127BC1; did=web_9a0b966fb1674f6c9a4886a504bee5e5").
+		SetHeader("Origin", "https://m.gifshow.com").
+		SetHeader(HttpHeaderReferer, strings.ReplaceAll(referUri, "m.gifshow.com/fw/photo", "m.gifshow.com/fw/photo")).
 		SetHeader(HttpHeaderContentType, "application/json").
 		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
 		SetBody(postData).
-		Post("https://v.m.chenzhongtech.com/rest/wd/photo/info")
+		Post("https://m.gifshow.com/rest/wd/photo/info?kpn=KUAISHOU&captchaToken=")
 
 	data := gjson.GetBytes(videoRes.Body(), "photo")
 	avatar := data.Get("headUrl").String()

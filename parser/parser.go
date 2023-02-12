@@ -12,8 +12,13 @@ func ParseVideoShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	// 根据分享url判断source
 	source := ""
 	for itemSource, itemSourceInfo := range videoSourceInfoMapping {
-		if strings.Contains(shareUrl, itemSourceInfo.VideoShareUrlDomain) {
-			source = itemSource
+		for _, itemUrlDomain := range itemSourceInfo.VideoShareUrlDomain {
+			if strings.Contains(shareUrl, itemUrlDomain) {
+				source = itemSource
+				break
+			}
+		}
+		if len(source) > 0 {
 			break
 		}
 	}
@@ -57,34 +62,25 @@ func BatchParseVideoId(source string, videoIds []string) (map[string]BatchParseI
 		return nil, fmt.Errorf("source %s has no video id parser", source)
 	}
 
-	switch source {
-	case SourceDouYin:
-		// 抖音接口支持多id请求
-		return douYin{}.batchParseVideoID(videoIds)
-	default:
-		// 其他平台接口不支持id批量, 使用协程方式请求
-		var wg sync.WaitGroup
-		var mu sync.Mutex
-		parseMap := make(map[string]BatchParseItem, len(videoIds))
-		for _, v := range videoIds {
-			wg.Add(1)
-			videoId := v
-			go func(videoId string) {
-				defer wg.Done()
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	parseMap := make(map[string]BatchParseItem, len(videoIds))
+	for _, v := range videoIds {
+		wg.Add(1)
+		videoId := v
+		go func(videoId string) {
+			defer wg.Done()
 
-				parseInfo, parseErr := ParseVideoId(source, videoId)
-				mu.Lock()
-				parseMap[videoId] = BatchParseItem{
-					ParseInfo: parseInfo,
-					Error:     parseErr,
-				}
-				mu.Unlock()
-			}(videoId)
-		}
-		wg.Wait()
-
-		return parseMap, nil
+			parseInfo, parseErr := ParseVideoId(source, videoId)
+			mu.Lock()
+			parseMap[videoId] = BatchParseItem{
+				ParseInfo: parseInfo,
+				Error:     parseErr,
+			}
+			mu.Unlock()
+		}(videoId)
 	}
+	wg.Wait()
 
-	return nil, errors.New("source not support batch parse video id")
+	return parseMap, nil
 }
