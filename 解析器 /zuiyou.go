@@ -42,6 +42,7 @@ func (z zuiYou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	data := gjson.GetBytes(res.Body(), "data.post")
 	videoKey := data.Get("imgs.0.id").String()
 	videoPlayAddr := data.Get("videos." + videoKey + ".url").String()
+	videoCover := strings.Trim(data.Get("videos."+videoKey+".cover_urls").String(), "[]\"")
 	title := data.Get("content").String()
 	userName := data.Get("member.name").String()
 	userAvatar := data.Get("member.avatar_urls.origin.urls.0").String()
@@ -49,6 +50,7 @@ func (z zuiYou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	parseRes := &VideoParseInfo{
 		Title:    title,
 		VideoUrl: videoPlayAddr,
+		CoverUrl: videoCover,
 	}
 	parseRes.Author.Name = userName
 	parseRes.Author.Avatar = userAvatar
