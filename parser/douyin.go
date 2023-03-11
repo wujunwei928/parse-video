@@ -2,6 +2,8 @@ package parser
 
 import (
 	"errors"
+	"fmt"
+	"math/rand"
 	"strings"
 
 	"github.com/tidwall/gjson"
@@ -12,12 +14,17 @@ import (
 type douYin struct{}
 
 func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
-	reqUrl := "https://www.iesdouyin.com/aweme/v1/web/aweme/detail/?aweme_id=" + videoId
+
+	reqUrl, err := d.getDetailUrlByVideoId(videoId)
+	if err != nil {
+		return nil, err
+	}
+
 	client := resty.New()
 	res, err := client.R().
-		SetHeader(HttpHeaderCookie, "ttwid=1%7Cg3mkQ4zWpDIHPZhitKABkAlgY7wYIjXaL-dKPKq9Gik%7C1676131262%7C4393576ad4aae2ab8091a2fb6ad679c882851c313c3f1f18418dacd779d34fd5; __ac_nonce=063e8a51e00246bd7927b; __ac_signature=_02B4Z6wo00f0130dUGgAAIDCiGK69KnZR.d9PVTAALy72e; msToken=Pjd8tqkk_5DcDHCu1SPENat04F4ReGou6-ooN4L9Zxw-rnq0JzMj-OnNZ90k2e79Ccu1Zr_FagheEFg8GULPVXBFHNVtFO_1bZbExqyo0Ic=; s_v_web_id=verify_le153mts_CjtZAjYN_VDN0_42E1_BONz_W9Q42yHSntOm; msToken=0e9rBOId2Tk1RhlLE0W0v5w2Tmw0WX_Fsea1MfUBW2E6G8kerGIOVO8VzTreSlf1SPgsVqRNZ7PEHPEmZzRykwQElZKH90zxwGUh05dmB20al3UFlfBV; ttcid=0886122963064dd2a054ba4dcedf61c537; tt_scid=1sT1CdTVVMLIJePCKOxMPLvSFDeEmNLPvDHT14XwEoNDPwjZO2GA97Oqq5Eipkk2aa1c").
-		SetHeader(HttpHeaderUserAgent, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.41").
-		SetHeader("authority", "www.iesdouyin.com").
+		SetHeader(HttpHeaderUserAgent, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36").
+		SetHeader(HttpHeaderReferer, "https://www.douyin.com/").
+		SetHeader(HttpHeaderCookie, fmt.Sprintf(`msToken=%s;odin_tt=324fb4ea4a89c0c05827e18a1ed9cf9bf8a17f7705fcc793fec935b637867e2a5a9b8168c885554d029919117a18ba69; ttwid=1%7CWBuxH_bhbuTENNtACXoesI5QHV2Dt9-vkMGVHSRRbgY%7C1677118712%7C1d87ba1ea2cdf05d80204aea2e1036451dae638e7765b8a4d59d87fa05dd39ff; bd_ticket_guard_client_data=eyJiZC10aWNrZXQtZ3VhcmQtdmVyc2lvbiI6MiwiYmQtdGlja2V0LWd1YXJkLWNsaWVudC1jc3IiOiItLS0tLUJFR0lOIENFUlRJRklDQVRFIFJFUVVFU1QtLS0tLVxyXG5NSUlCRFRDQnRRSUJBREFuTVFzd0NRWURWUVFHRXdKRFRqRVlNQllHQTFVRUF3d1BZbVJmZEdsamEyVjBYMmQxXHJcbllYSmtNRmt3RXdZSEtvWkl6ajBDQVFZSUtvWkl6ajBEQVFjRFFnQUVKUDZzbjNLRlFBNUROSEcyK2F4bXAwNG5cclxud1hBSTZDU1IyZW1sVUE5QTZ4aGQzbVlPUlI4NVRLZ2tXd1FJSmp3Nyszdnc0Z2NNRG5iOTRoS3MvSjFJc3FBc1xyXG5NQ29HQ1NxR1NJYjNEUUVKRGpFZE1Cc3dHUVlEVlIwUkJCSXdFSUlPZDNkM0xtUnZkWGxwYmk1amIyMHdDZ1lJXHJcbktvWkl6ajBFQXdJRFJ3QXdSQUlnVmJkWTI0c0RYS0c0S2h3WlBmOHpxVDRBU0ROamNUb2FFRi9MQnd2QS8xSUNcclxuSURiVmZCUk1PQVB5cWJkcytld1QwSDZqdDg1czZZTVNVZEo5Z2dmOWlmeTBcclxuLS0tLS1FTkQgQ0VSVElGSUNBVEUgUkVRVUVTVC0tLS0tXHJcbiJ9`, d.randSeq(107))).
 		Get(reqUrl)
 	if err != nil {
 		return nil, err
@@ -57,4 +64,31 @@ func (d douYin) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	}
 
 	return d.parseVideoID(videoId)
+}
+
+func (d douYin) getDetailUrlByVideoId(videoId string) (string, error) {
+	postData := map[string]interface{}{
+		"url":        fmt.Sprintf("https://www.douyin.com/aweme/v1/web/aweme/detail/?aweme_id=%s&aid=1128&version_name=23.5.0&device_platform=android&os_version=2333", videoId),
+		"user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
+	}
+
+	client := resty.New()
+	res, err := client.R().
+		SetHeader(HttpHeaderContentType, "application/json").
+		SetBody(postData).
+		Post("https://tiktok.iculture.cc/X-Bogus")
+	if err != nil {
+		return "", err
+	}
+
+	return gjson.GetBytes(res.Body(), "param").String(), nil
+}
+
+func (d douYin) randSeq(n int) string {
+	letters := []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }
