@@ -7,7 +7,6 @@
 <meta name="force-rendering" content="webkit"/>
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
 <title>{{ .title }}</title>
-<link rel="icon" type="image/png" href="favicon.png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mdui@1.0.0/dist/css/mdui.min.css"/>
 <script src="https://cdn.jsdelivr.net/npm/mdui@1.0.0/dist/js/mdui.min.js"></script>
 <script src="https://cdn.bootcss.com/jquery/2.1.4/jquery.min.js"></script>
@@ -88,12 +87,12 @@
 </main>
 <script>
 function  setValue(){
-    var data =  document.getElementById("url").value;
+    let data =  document.getElementById("url").value;
     let regex = /http[s]?:\/\/[\w.-]+[\w\/-]*[\w.-]*\??[\w=&:\-\+\%]*[/]*/;
-    var v =  data.match(regex)[0];
+    let v =  data.match(regex)[0];
     console.log(v);
 
-    var xmlhttp;
+    let xmlhttp;
     if(window.XMLHttpRequest){
         xmlhttp=new XMLHttpRequest();
     }
@@ -102,20 +101,44 @@ function  setValue(){
     }
 
     // 链接地址需要用encodeURIComponent加密, 否则会导致原视频链接中&后的字符被识别为本链接的参数而丢弃
-    xmlhttp.open("GET","/video/share/url/parse?url=" + encodeURIComponent(v),false);
+    xmlhttp.open("GET", location.href + "/video/share/url/parse?url=" + encodeURIComponent(v),false);
     xmlhttp.send();
-    var jsonObj = JSON.parse(xmlhttp.responseText);
-    console.log(jsonObj);
-    if(jsonObj.code == 200){
-        mdui.snackbar({
-            message: '解析成功'
-        });
-        $(".down").html('<h4>'+jsonObj.data.title+' </h4><a class="mdui-btn mdui-btn-raised" href="'+jsonObj.data.cover_url+'" target="_blank" download="video">下载封面</a><a class="mdui-btn mdui-btn-raised" href="'+jsonObj.data.video_url+'" target="_blank" download="video">下载视频</a>');
+    const jsonObj = JSON.parse(xmlhttp.responseText);
+    if(jsonObj.code === 200){
+        const image_thumbnail = jsonObj.data.cover_url;
+        const video_url = jsonObj.data.video_url;
+        const download_html = '<h4>'+jsonObj.data.title+' </h4>' +
+            `<a class="mdui-btn mdui-btn-raised" href="${image_thumbnail}" target="_blank" download="video">下载封面</a>` +
+            `<a class="mdui-btn mdui-btn-raised" href="${video_url}" target="_blank" download="video">下载视频</a>` +
+            `<input class="mdui-textfield-input" type="text" id="video_url" value="${video_url}" disabled hidden="hidden" />` +
+            `<a class="mdui-btn mdui-btn-raised" onclick="copy_video_url_to_clipboard()">复制地址</a>`
+        ;
+        $(".down").html(download_html) ;
     }else{
         mdui.snackbar({
             message: '解析失败,视频不存在或者链接不正确'
         });
     }
+}
+
+/**
+ * 复制视频地址到剪贴板
+ */
+function copy_video_url_to_clipboard(){
+    let video_url = document.getElementById("video_url").value;
+    let input = document.createElement('input');
+    input.setAttribute('readonly', 'readonly');
+    input.setAttribute('value', video_url);
+    document.body.appendChild(input);
+    input.setSelectionRange(0, 9999);
+    input.select();
+    if (document.execCommand('copy')) {
+        document.execCommand('copy');
+        mdui.snackbar({
+            message: '复制成功'
+        });
+    }
+    document.body.removeChild(input);
 }
 </script>
 </body>
