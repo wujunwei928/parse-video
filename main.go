@@ -26,7 +26,7 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(200, "index.tmpl", gin.H{
-			"title": "github.com/wujunwei928/parse-video Demo",
+			"title": os.Getenv("APP_NAME"),
 		})
 	})
 
