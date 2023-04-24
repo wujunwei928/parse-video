@@ -14,6 +14,29 @@ Golang短视频去水印, 目前支持20个平台, 欢迎各位Star。
 | 逗拍 | ✔ | 微博 | ✔ | 绿洲 | ✔| 全民K歌 | ✔ | 6间房 | ✔ |
 | 美拍 | ✔ | 新片场 | ✔ | 好看视频 | ✔| 虎牙 | ✔ | AcFun | ✔ |
 
+## 转载后增加功能
+
+1. Docker镜像支持Arm平台
+2. 增加复制视频地址
+3. 支持部署在二级目录
+4. 支持定义html标题
+
+```shell
+docker run \
+  --detach \
+  --name=VideoParse \
+  --publish 8278:8080 \
+  --env TZ="Asia/Shanghai" \
+  --env APP_NAME="视频解析" \
+  --memory 128M \
+  --cpus 0.3 \
+  --log-driver json-file \
+  --log-opt max-size=100m \
+  1fe2be14/parse-video:latest
+```
+
+> Docker镜像地址：https://hub.docker.com/r/1fe2be14/parse-video
+
 # 安装
 ```go
 // 根据分享链接解析
