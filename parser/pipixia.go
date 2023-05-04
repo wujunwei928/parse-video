@@ -25,7 +25,7 @@ func (p piPiXia) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	data := gjson.GetBytes(res.Body(), "data.data.item")
 	author := data.Get("author.name").String()
 	avatar := data.Get("author.avatar.download_list.0.url").String()
-	title := data.Get("title").String()
+	title := data.Get("share.title").String()
 	videoUrl := data.Get("origin_video_download.url_list.0.url").String()
 	cover := data.Get("cover.url_list.0.url").String()
 
