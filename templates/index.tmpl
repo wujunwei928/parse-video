@@ -113,7 +113,7 @@ function  setValue(){
         $(".down").html('<h4>'+jsonObj.data.title+' </h4><a class="mdui-btn mdui-btn-raised" href="'+jsonObj.data.cover_url+'" target="_blank" download="video">下载封面</a><a class="mdui-btn mdui-btn-raised" href="'+jsonObj.data.video_url+'" target="_blank" download="video">下载视频</a>');
     }else{
         mdui.snackbar({
-            message: '解析失败,视频不存在或者链接不正确'
+            message: "解析失败,视频不存在或者链接不正确:<br/>" + jsonObj.msg
         });
     }
 }

@@ -44,7 +44,7 @@ func main() {
 		if err != nil {
 			jsonRes = HttpResponse{
 				Code: 201,
-				Msg:  "解析失败",
+				Msg:  err.Error(),
 			}
 		}
 
@@ -64,7 +64,7 @@ func main() {
 		if err != nil {
 			jsonRes = HttpResponse{
 				Code: 201,
-				Msg:  "解析失败",
+				Msg:  err.Error(),
 			}
 		}
 

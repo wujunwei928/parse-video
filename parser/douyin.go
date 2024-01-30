@@ -29,6 +29,14 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 
 	data := gjson.GetBytes(res.Body(), "item_list.0")
 
+	if !data.Exists() {
+		return nil, fmt.Errorf(
+			"get video info fail: %s - %s",
+			gjson.GetBytes(res.Body(), "filter_list.0.filter_reason"),
+			gjson.GetBytes(res.Body(), "filter_list.0.notice"),
+		)
+	}
+
 	videoInfo := &VideoParseInfo{
 		Title:    data.Get("desc").String(),
 		VideoUrl: data.Get("video.play_addr.url_list.0").String(),
