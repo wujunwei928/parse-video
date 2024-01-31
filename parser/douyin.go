@@ -37,9 +37,11 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		)
 	}
 
+	videoUrl := data.Get("video.play_addr.url_list.0").String()
+	videoUrl = strings.ReplaceAll(videoUrl, "playwm", "play")
 	videoInfo := &VideoParseInfo{
 		Title:    data.Get("desc").String(),
-		VideoUrl: data.Get("video.play_addr.url_list.0").String(),
+		VideoUrl: videoUrl,
 		MusicUrl: "",
 		CoverUrl: data.Get("video.cover.url_list.0").String(),
 	}
