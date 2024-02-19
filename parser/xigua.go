@@ -2,8 +2,8 @@ package parser
 
 import (
 	"bytes"
-	"encoding/base64"
 	"errors"
+	"net/url"
 	"strings"
 
 	"github.com/tidwall/gjson"
@@ -38,7 +38,7 @@ func (x xiGua) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 }
 
 func (x xiGua) parseVideoID(videoId string) (*VideoParseInfo, error) {
-	reqUrl := "https://www.ixigua.com/" + videoId
+	reqUrl := "https://m.ixigua.com/douyin/share/video/" + videoId + "?aweme_type=107&schema_type=1&utm_source=copy&utm_campaign=client_share&utm_medium=android&app=aweme"
 	headers := map[string]string{
 		HttpHeaderUserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36",
 		HttpHeaderCookie:    "MONITOR_WEB_ID=7892c49b-296e-4499-8704-e47c1b150c18; ixigua-a-s=1; ttcid=af99669b6304453480454f150701d5c226; BD_REF=1; __ac_nonce=060d88ff000a75e8d17eb; __ac_signature=_02B4Z6wo00f01kX9ZpgAAIDAKIBBQUIPYT5F2WIAAPG2ad; ttwid=1%7CcIsVF_3vqSIk4XErhPB0H2VaTxT0tdsTMRbMjrJOPN8%7C1624806049%7C08ce7dd6f7d20506a41ba0a331ef96a6505d96731e6ad9f6c8c709f53f227ab1",
@@ -56,28 +56,24 @@ func (x xiGua) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	ssrData := doc.Find("#SSR_HYDRATED_DATA").Text()
-	ssrJson := strings.ReplaceAll(ssrData, "window._SSR_HYDRATED_DATA=", "")
-	ssrJson = strings.ReplaceAll(ssrJson, "undefined", "null")
-
-	videoData := gjson.Get(ssrJson, "anyVideo.gidInformation.packerData.video")
-	userId := videoData.Get("user_info.user_id").String()
-	userName := videoData.Get("user_info.name").String()
-	userAvatar := videoData.Get("user_info.avatar_url").String()
-	videoDesc := videoData.Get("title").String()
-	videoAddrBase64 := videoData.Get("videoResource.dash.dynamic_video.dynamic_video_list.2.main_url").String()
-	musicAddrBase64 := videoData.Get("videoResource.dash.dynamic_video.dynamic_audio_list.0.main_url").String()
-	if len(videoAddrBase64) <= 0 {
-		// 部分视频返回数据videoResource.dash为空, 改用 videoResource.normal 数据
-		videoAddrBase64 = videoData.Get("videoResource.normal.video_list.video_1.main_url").String()
+	ssrData := doc.Find("#RENDER_DATA").Text()
+	ssrJson, err := url.QueryUnescape(ssrData)
+	if err != nil {
+		return nil, err
 	}
-	videoAddr, _ := base64.StdEncoding.DecodeString(videoAddrBase64)
-	musicAddr, _ := base64.StdEncoding.DecodeString(musicAddrBase64)
+
+	videoData := gjson.Get(ssrJson, "app.videoInfoRes.item_list.0")
+	userId := videoData.Get("author.user_id").String()
+	userName := videoData.Get("author.nickname").String()
+	userAvatar := videoData.Get("author.avatar_thumb.url_list.0").String()
+	videoDesc := videoData.Get("desc").String()
+	videoAddr := videoData.Get("video.play_addr.url_list.0").String()
+	coverUrl := videoData.Get("video.cover.url_list.0").String()
 
 	parseRes := &VideoParseInfo{
 		Title:    videoDesc,
-		VideoUrl: string(videoAddr),
-		MusicUrl: string(musicAddr),
+		VideoUrl: videoAddr,
+		CoverUrl: coverUrl,
 	}
 	parseRes.Author.Uid = userId
 	parseRes.Author.Name = userName
