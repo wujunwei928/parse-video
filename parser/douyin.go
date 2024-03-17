@@ -1,10 +1,14 @@
 package parser
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"math/rand"
+	"net/url"
 	"strings"
+
+	"github.com/PuerkitoBio/goquery"
 
 	"github.com/tidwall/gjson"
 
@@ -14,20 +18,26 @@ import (
 type douYin struct{}
 
 func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
-
-	reqUrl := fmt.Sprintf("https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/?item_ids=%s&a_bogus=64745b2b5bdc4e75b720a9a85b19867a", videoId)
+	reqUrl := fmt.Sprintf("https://www.iesdouyin.com/share/video/%s", videoId)
 
 	client := resty.New()
 	res, err := client.R().
-		SetHeader(HttpHeaderUserAgent, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36").
-		SetHeader(HttpHeaderReferer, "https://www.douyin.com/").
-		SetHeader(HttpHeaderCookie, `msToken=`+d.randSeq(107)+`;odin_tt=324fb4ea4a89c0c05827e18a1ed9cf9bf8a17f7705fcc793fec935b637867e2a5a9b8168c885554d029919117a18ba69; ttwid=1%7CWBuxH_bhbuTENNtACXoesI5QHV2Dt9-vkMGVHSRRbgY%7C1677118712%7C1d87ba1ea2cdf05d80204aea2e1036451dae638e7765b8a4d59d87fa05dd39ff; bd_ticket_guard_client_data=eyJiZC10aWNrZXQtZ3VhcmQtdmVyc2lvbiI6MiwiYmQtdGlja2V0LWd1YXJkLWNsaWVudC1jc3IiOiItLS0tLUJFR0lOIENFUlRJRklDQVRFIFJFUVVFU1QtLS0tLVxyXG5NSUlCRFRDQnRRSUJBREFuTVFzd0NRWURWUVFHRXdKRFRqRVlNQllHQTFVRUF3d1BZbVJmZEdsamEyVjBYMmQxXHJcbllYSmtNRmt3RXdZSEtvWkl6ajBDQVFZSUtvWkl6ajBEQVFjRFFnQUVKUDZzbjNLRlFBNUROSEcyK2F4bXAwNG5cclxud1hBSTZDU1IyZW1sVUE5QTZ4aGQzbVlPUlI4NVRLZ2tXd1FJSmp3Nyszdnc0Z2NNRG5iOTRoS3MvSjFJc3FBc1xyXG5NQ29HQ1NxR1NJYjNEUUVKRGpFZE1Cc3dHUVlEVlIwUkJCSXdFSUlPZDNkM0xtUnZkWGxwYmk1amIyMHdDZ1lJXHJcbktvWkl6ajBFQXdJRFJ3QXdSQUlnVmJkWTI0c0RYS0c0S2h3WlBmOHpxVDRBU0ROamNUb2FFRi9MQnd2QS8xSUNcclxuSURiVmZCUk1PQVB5cWJkcytld1QwSDZqdDg1czZZTVNVZEo5Z2dmOWlmeTBcclxuLS0tLS1FTkQgQ0VSVElGSUNBVEUgUkVRVUVTVC0tLS0tXHJcbiJ9`).
+		SetHeader(HttpHeaderUserAgent, "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1 Edg/122.0.0.0").
 		Get(reqUrl)
 	if err != nil {
 		return nil, err
 	}
+	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(res.Body()))
+	if err != nil {
+		return nil, err
+	}
+	returnData := doc.Find("#RENDER_DATA").Text()
+	decodeData, err := url.QueryUnescape(returnData)
+	if err != nil {
+		return nil, err
+	}
 
-	data := gjson.GetBytes(res.Body(), "item_list.0")
+	data := gjson.Get(decodeData, "app.videoInfoRes.item_list.0")
 
 	if !data.Exists() {
 		return nil, fmt.Errorf(
