@@ -47,6 +47,7 @@ func (q quanMinKGe) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		VideoUrl: data.Get("playurl_video").String(),
 		CoverUrl: data.Get("cover").String(),
 	}
+	parseInfo.Author.Uid = data.Get("uid").String()
 	parseInfo.Author.Name = data.Get("nick").String()
 	parseInfo.Author.Avatar = data.Get("avatar").String()
 

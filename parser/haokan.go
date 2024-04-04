@@ -43,6 +43,9 @@ func (h haoKan) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		VideoUrl: videoUrl,
 		CoverUrl: cover,
 	}
+	parseRes.Author.Uid = data.Get("mth.mthid").String()
+	parseRes.Author.Avatar = data.Get("mth.author_photo").String()
+	parseRes.Author.Name = data.Get("mth.author_name").String()
 
 	return parseRes, nil
 }

@@ -42,6 +42,7 @@ func (h huYa) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		VideoUrl: videoData.Get("definitions.0.url").String(),
 		CoverUrl: videoData.Get("videoCover").String(),
 	}
+	parseRes.Author.Uid = videoData.Get("uid").String()
 	parseRes.Author.Avatar = videoData.Get("actorAvatarUrl").String()
 	parseRes.Author.Name = videoData.Get("actorNick").String()
 
