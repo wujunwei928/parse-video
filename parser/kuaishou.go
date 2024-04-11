@@ -2,6 +2,7 @@ package parser
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/tidwall/gjson"
@@ -60,6 +61,10 @@ func (k kuaiShou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 		SetBody(postData).
 		Post("https://m.gifshow.com/rest/wd/photo/info?kpn=KUAISHOU&captchaToken=")
 
+	if err != nil {
+		return nil, err
+	}
+
 	data := gjson.GetBytes(videoRes.Body(), "photo")
 	avatar := data.Get("headUrl").String()
 	author := data.Get("userName").String()
@@ -67,10 +72,22 @@ func (k kuaiShou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	videoUrl := data.Get("mainMvUrls.0.url").String()
 	cover := data.Get("coverUrls.0.url").String()
 
+	// 获取图集
+	imageCdnHost := data.Get("ext_params.atlas.cdn.0").String()
+	imagesObjArr := data.Get("ext_params.atlas.list").Array()
+	images := make([]string, 0, len(imagesObjArr))
+	if len(imageCdnHost) > 0 && len(imagesObjArr) > 0 {
+		for _, imageItem := range imagesObjArr {
+			imageUrl := fmt.Sprintf("https://%s/%s", imageCdnHost, imageItem.String())
+			images = append(images, imageUrl)
+		}
+	}
+
 	parseRes := &VideoParseInfo{
 		Title:    title,
 		VideoUrl: videoUrl,
 		CoverUrl: cover,
+		Images:   images,
 	}
 	parseRes.Author.Name = author
 	parseRes.Author.Avatar = avatar

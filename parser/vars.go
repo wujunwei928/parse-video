@@ -52,10 +52,11 @@ type VideoParseInfo struct {
 		Name   string `json:"name"`   // 作者名称
 		Avatar string `json:"avatar"` // 作者头像
 	} `json:"author"`
-	Title    string `json:"title"`     // 描述
-	VideoUrl string `json:"video_url"` // 视频播放地址
-	MusicUrl string `json:"music_url"` // 音乐播放地址
-	CoverUrl string `json:"cover_url"` // 视频封面地址
+	Title    string   `json:"title"`     // 描述
+	VideoUrl string   `json:"video_url"` // 视频播放地址
+	MusicUrl string   `json:"music_url"` // 音乐播放地址
+	CoverUrl string   `json:"cover_url"` // 视频封面地址
+	Images   []string `json:"images"`    // 图集图片地址列表
 }
 
 // BatchParseItem 批量解析时, 单条解析格式
