@@ -14,12 +14,16 @@ type kuaiShou struct{}
 
 func (k kuaiShou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	client := resty.New()
+	// disable redirects in the HTTP client, get params before redirects
 	client.SetRedirectPolicy(resty.NoRedirectPolicy())
-	res, _ := client.R().
+	res, err := client.R().
 		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
 		SetHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7").
 		Get(shareUrl)
-	//这里会返回err, auto redirect is disabled
+	// 非 resty.ErrAutoRedirectDisabled 错误时，返回错误
+	if !errors.Is(err, resty.ErrAutoRedirectDisabled) {
+		return nil, err
+	}
 
 	// 获取 cookies： did，didv
 	cookies := res.RawResponse.Cookies()

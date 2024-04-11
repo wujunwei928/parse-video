@@ -18,11 +18,15 @@ type xiGua struct {
 
 func (x xiGua) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	client := resty.New()
+	// disable redirects in the HTTP client, get params before redirects
 	client.SetRedirectPolicy(resty.NoRedirectPolicy())
-	res, _ := client.R().
+	res, err := client.R().
 		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
 		Get(shareUrl)
-	// 这里会返回err, auto redirect is disabled
+	// 非 resty.ErrAutoRedirectDisabled 错误时，返回错误
+	if !errors.Is(err, resty.ErrAutoRedirectDisabled) {
+		return nil, err
+	}
 
 	locationRes, err := res.RawResponse.Location()
 	if err != nil {
