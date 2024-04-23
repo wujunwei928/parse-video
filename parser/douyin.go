@@ -73,7 +73,7 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		CoverUrl: data.Get("video.cover.url_list.0").String(),
 		Images:   images,
 	}
-	videoInfo.Author.Uid = data.Get("author.unique_id").String()
+	videoInfo.Author.Uid = data.Get("author.sec_uid").String()
 	videoInfo.Author.Name = data.Get("author.nickname").String()
 	videoInfo.Author.Avatar = data.Get("author.avatar_thumb.url_list.0").String()
 
