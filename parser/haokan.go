@@ -33,6 +33,11 @@ func (h haoKan) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		return nil, err
 	}
 
+	// 接口返回错误
+	if gjson.GetBytes(res.Body(), "errno").Int() != 0 {
+		return nil, errors.New(gjson.GetBytes(res.Body(), "error").String())
+	}
+
 	data := gjson.GetBytes(res.Body(), "data.apiData.curVideoMeta")
 	title := data.Get("title").String()
 	videoUrl := data.Get("playurl").String()

@@ -22,6 +22,16 @@ func (w weiShi) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		return nil, err
 	}
 
+	// 接口返回错误
+	if gjson.GetBytes(res.Body(), "ret").Int() != 0 {
+		return nil, errors.New(gjson.GetBytes(res.Body(), "msg").String())
+	}
+	// 视频状态错误
+	errMsg := gjson.GetBytes(res.Body(), "data.errmsg").String()
+	if len(errMsg) > 0 {
+		return nil, errors.New(errMsg)
+	}
+
 	data := gjson.GetBytes(res.Body(), "data.feeds.0")
 	author := data.Get("poster.nick").String()
 	avatar := data.Get("poster.avatar").String()

@@ -5,9 +5,21 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+
+	"github.com/wujunwei928/parse-video/utils"
 )
 
-// ParseVideoShareUrl 根据视频分享链接解析视频信息
+// ParseVideoShareUrlByRegexp 将分享链接信息, 进行正则表达式匹配到分享链接后, 再解析视频信息
+func ParseVideoShareUrlByRegexp(shareMsg string) (*VideoParseInfo, error) {
+	videoShareUrl, err := utils.RegexpMatchUrlFromString(shareMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	return ParseVideoShareUrl(videoShareUrl)
+}
+
+// ParseVideoShareUrl 根据视频分享链接解析视频信息: 分享链接需是正常http链接
 func ParseVideoShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	// 根据分享url判断source
 	source := ""

@@ -34,6 +34,16 @@ func (q quanMin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		return nil, err
 	}
 
+	// 接口返回错误
+	if gjson.GetBytes(res.Body(), "errno").Int() != 0 {
+		return nil, errors.New(gjson.GetBytes(res.Body(), "error").String())
+	}
+	// 视频状态错误
+	metaStatusText := gjson.GetBytes(res.Body(), "data.meta.statusText").String()
+	if len(metaStatusText) > 0 {
+		return nil, errors.New(metaStatusText)
+	}
+
 	data := gjson.GetBytes(res.Body(), "data")
 	author := data.Get("author.name").String()
 	avatar := data.Get("author.icon").String()

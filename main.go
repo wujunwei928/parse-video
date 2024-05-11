@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"regexp"
 	"time"
 
 	"github.com/wujunwei928/parse-video/parser"
@@ -31,11 +30,8 @@ func main() {
 	})
 
 	r.GET("/video/share/url/parse", func(c *gin.Context) {
-		urlReg := regexp.MustCompile(`http[s]?:\/\/[\w.-]+[\w\/-]*[\w.-]*\??[\w=&:\-\+\%]*[/]*`)
-		videoShareUrl := urlReg.FindString(c.Query("url"))
-		//fmt.Println("123", videoShareUrl, c.Query("url"))
-
-		parseRes, err := parser.ParseVideoShareUrl(videoShareUrl)
+		paramUrl := c.Query("url")
+		parseRes, err := parser.ParseVideoShareUrlByRegexp(paramUrl)
 		jsonRes := HttpResponse{
 			Code: 200,
 			Msg:  "解析成功",

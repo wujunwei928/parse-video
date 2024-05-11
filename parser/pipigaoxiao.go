@@ -29,6 +29,12 @@ func (p piPiGaoXiao) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		return nil, err
 	}
 
+	// 接口返回错误
+	apiErr := gjson.GetBytes(res.Body(), "msg")
+	if apiErr.Exists() {
+		return nil, errors.New(apiErr.String())
+	}
+
 	data := gjson.GetBytes(res.Body(), "data.post")
 	title := data.Get("content").String()
 	id := data.Get("imgs.0.id").String()
