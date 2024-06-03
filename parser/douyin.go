@@ -40,10 +40,15 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	data := gjson.Get(decodeData, "app.videoInfoRes.item_list.0")
 
 	if !data.Exists() {
+		filterObj := gjson.Get(
+			decodeData,
+			fmt.Sprintf(`app.videoInfoRes.filter_list.#(aweme_id=="%s")`, videoId),
+		)
+
 		return nil, fmt.Errorf(
 			"get video info fail: %s - %s",
-			gjson.GetBytes(res.Body(), "filter_list.0.filter_reason"),
-			gjson.GetBytes(res.Body(), "filter_list.0.notice"),
+			filterObj.Get("filter_reason"),
+			filterObj.Get("detail_msg"),
 		)
 	}
 
