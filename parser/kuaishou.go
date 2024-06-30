@@ -69,6 +69,10 @@ func (k kuaiShou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 		return nil, err
 	}
 
+	if resultCode := gjson.GetBytes(videoRes.Body(), "result").Int(); resultCode != 1 {
+		return nil, fmt.Errorf("获取作品信息失败:result=%d", resultCode)
+	}
+
 	data := gjson.GetBytes(videoRes.Body(), "photo")
 	avatar := data.Get("headUrl").String()
 	author := data.Get("userName").String()
