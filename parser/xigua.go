@@ -3,12 +3,10 @@ package parser
 import (
 	"bytes"
 	"errors"
-	"net/url"
+	"regexp"
 	"strings"
 
 	"github.com/tidwall/gjson"
-
-	"github.com/PuerkitoBio/goquery"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -56,17 +54,15 @@ func (x xiGua) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		return nil, err
 	}
 
-	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(res.Body()))
-	if err != nil {
-		return nil, err
-	}
-	ssrData := doc.Find("#RENDER_DATA").Text()
-	ssrJson, err := url.QueryUnescape(ssrData)
-	if err != nil {
-		return nil, err
+	re := regexp.MustCompile(`window._ROUTER_DATA\s*=\s*(.*?)</script>`)
+	findRes := re.FindSubmatch(res.Body())
+	if len(findRes) < 2 {
+		return nil, errors.New("parse video json info from html fail")
 	}
 
-	videoData := gjson.Get(ssrJson, "app.videoInfoRes.item_list.0")
+	jsonBytes := bytes.TrimSpace(findRes[1])
+	videoData := gjson.GetBytes(jsonBytes, "loaderData.video_(id)/page.videoInfoRes.item_list.0")
+
 	userId := videoData.Get("author.user_id").String()
 	userName := videoData.Get("author.nickname").String()
 	userAvatar := videoData.Get("author.avatar_thumb.url_list.0").String()

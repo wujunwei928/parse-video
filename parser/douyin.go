@@ -5,10 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"net/url"
+	"regexp"
 	"strings"
-
-	"github.com/PuerkitoBio/goquery"
 
 	"github.com/tidwall/gjson"
 
@@ -27,22 +25,20 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(res.Body()))
-	if err != nil {
-		return nil, err
-	}
-	returnData := doc.Find("#RENDER_DATA").Text()
-	decodeData, err := url.QueryUnescape(returnData)
-	if err != nil {
-		return nil, err
+
+	re := regexp.MustCompile(`window._ROUTER_DATA\s*=\s*(.*?)</script>`)
+	findRes := re.FindSubmatch(res.Body())
+	if len(findRes) < 2 {
+		return nil, errors.New("parse video json info from html fail")
 	}
 
-	data := gjson.Get(decodeData, "app.videoInfoRes.item_list.0")
+	jsonBytes := bytes.TrimSpace(findRes[1])
+	data := gjson.GetBytes(jsonBytes, "loaderData.video_(id)/page.videoInfoRes.item_list.0")
 
 	if !data.Exists() {
-		filterObj := gjson.Get(
-			decodeData,
-			fmt.Sprintf(`app.videoInfoRes.filter_list.#(aweme_id=="%s")`, videoId),
+		filterObj := gjson.GetBytes(
+			jsonBytes,
+			fmt.Sprintf(`loaderData.video_(id)/page.videoInfoRes.filter_list.#(aweme_id=="%s")`, videoId),
 		)
 
 		return nil, fmt.Errorf(
@@ -55,7 +51,7 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	// 获取图集图片地址
 	imagesObjArr := data.Get("images").Array()
 	images := make([]string, 0, len(imagesObjArr))
-	for _, imageItem := range data.Get("images").Array() {
+	for _, imageItem := range imagesObjArr {
 		imageUrl := imageItem.Get("url_list.0").String()
 		if len(imageUrl) > 0 {
 			images = append(images, imageUrl)
