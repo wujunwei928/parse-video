@@ -112,11 +112,11 @@ function  setValue(){
         });
 
         let successHtml = '<h4>'+jsonObj.data.title+' </h4>';
-        successHtml += '<a class="mdui-btn mdui-btn-raised" href="'+jsonObj.data.cover_url+'" target="_blank" download="video">下载封面</a>';
+        successHtml += '<a class="mdui-btn mdui-btn-raised" href="'+jsonObj.data.cover_url+'" target="_blank" download="video" referrerpolicy="no-referrer">下载封面</a>';
 
         // 如果video_url不为空, 则显示下载视频按钮
         if(jsonObj.data.video_url != ""){
-            successHtml += '<a class="mdui-btn mdui-btn-raised" href="'+jsonObj.data.video_url+'" target="_blank" download="video">下载视频</a>';
+            successHtml += '<a class="mdui-btn mdui-btn-raised" href="'+jsonObj.data.video_url+'" target="_blank" download="video" referrerpolicy="no-referrer">下载视频</a>';
         }
 
         // 如果 jsonObj.data.images 是数组， 并且长度大于0, 则img展示图片
