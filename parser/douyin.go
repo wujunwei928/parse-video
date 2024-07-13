@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -88,6 +89,25 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 }
 
 func (d douYin) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
+	urlRes, err := url.Parse(shareUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	switch urlRes.Host {
+	case "www.iesdouyin.com", "www.douyin.com":
+		return d.parsePcShareUrl(shareUrl) // 解析电脑网页端链接
+	case "v.douyin.com":
+		return d.parseAppShareUrl(shareUrl) // 解析App分享链接
+	}
+
+	return nil, fmt.Errorf("douyin not support this host: %s", urlRes.Host)
+}
+
+func (d douYin) parseAppShareUrl(shareUrl string) (*VideoParseInfo, error) {
+	// 适配App分享链接类型:
+	// https://v.douyin.com/xxxxxx/
+
 	client := resty.New()
 	// disable redirects in the HTTP client, get params before redirects
 	client.SetRedirectPolicy(resty.NoRedirectPolicy())
@@ -117,6 +137,17 @@ func (d douYin) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 		return xiGua{}.parseVideoID(videoId)
 	}
 
+	return d.parseVideoID(videoId)
+}
+
+func (d douYin) parsePcShareUrl(shareUrl string) (*VideoParseInfo, error) {
+	// 适配电脑网页端链接类型
+	// https://www.iesdouyin.com/share/video/xxxxxx/
+	// https://www.douyin.com/video/xxxxxx
+	videoId, err := d.parseVideoIdFromPath(shareUrl)
+	if err != nil {
+		return nil, err
+	}
 	return d.parseVideoID(videoId)
 }
 
