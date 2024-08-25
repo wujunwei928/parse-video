@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"embed"
+	"html/template"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -19,10 +22,18 @@ type HttpResponse struct {
 	Data interface{} `json:"data"`
 }
 
+//go:embed templates/*
+var files embed.FS
+
 func main() {
 	r := gin.Default()
 
-	r.LoadHTMLGlob("templates/*")
+	sub, err := fs.Sub(files, "templates")
+	if err != nil {
+		panic(err)
+	}
+	tmpl := template.Must(template.ParseFS(sub, "*.tmpl"))
+	r.SetHTMLTemplate(tmpl)
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(200, "index.tmpl", gin.H{
 			"title": "github.com/wujunwei928/parse-video Demo",
