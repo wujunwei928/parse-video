@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/tidwall/gjson"
-
 	"github.com/go-resty/resty/v2"
+	"github.com/tidwall/gjson"
 )
 
 type douPai struct {

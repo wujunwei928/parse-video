@@ -6,9 +6,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/tidwall/gjson"
-
 	"github.com/go-resty/resty/v2"
+	"github.com/tidwall/gjson"
 )
 
 type weiBo struct {

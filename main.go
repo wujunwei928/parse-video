@@ -11,9 +11,8 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/wujunwei928/parse-video/parser"
-
 	"github.com/gin-gonic/gin"
+	"github.com/wujunwei928/parse-video/parser"
 )
 
 type HttpResponse struct {
