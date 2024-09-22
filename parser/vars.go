@@ -22,6 +22,7 @@ const (
 	SourceSixRoom      = "sixroom"      // 六间房
 	SourceXinPianChang = "xinpianchang" // 新片场
 	SourceHaoKan       = "haokan"       // 好看视频
+	SourceRedBook      = "redbook"      // 小红书
 )
 
 // http 相关
@@ -173,5 +174,12 @@ var videoSourceInfoMapping = map[string]videoSourceInfo{
 		},
 		VideoShareUrlParser: haoKan{},
 		VideoIdParser:       haoKan{},
+	},
+	SourceRedBook: {
+		VideoShareUrlDomain: []string{
+			"www.xiaohongshu.com",
+			"xhslink.com",
+		},
+		VideoShareUrlParser: redBook{},
 	},
 }
