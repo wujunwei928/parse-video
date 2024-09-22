@@ -32,12 +32,26 @@ func (r redBook) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 
 	nodeId := gjson.GetBytes(jsonBytes, "note.currentNoteId").String()
 	data := gjson.GetBytes(jsonBytes, fmt.Sprintf("note.noteDetailMap.%s.note", nodeId))
-	fmt.Println(data.Get("imageList").String())
+
+	videoUrl := data.Get("video.media.stream.h264.0.masterUrl").String()
+
+	// 获取图集图片地址
+	imagesObjArr := data.Get("imageList").Array()
+	images := make([]string, 0, len(imagesObjArr))
+	if len(videoUrl) <= 0 {
+		for _, imageItem := range imagesObjArr {
+			imageUrl := imageItem.Get("urlDefault").String()
+			if len(imageUrl) > 0 {
+				images = append(images, imageUrl)
+			}
+		}
+	}
 
 	parseInfo := &VideoParseInfo{
 		Title:    data.Get("title").String(),
 		VideoUrl: data.Get("video.media.stream.h264.0.masterUrl").String(),
-		CoverUrl: data.Get("imageList.0.infoList.1.url").String(),
+		CoverUrl: data.Get("imageList.0.urlDefault").String(),
+		Images:   images,
 	}
 	parseInfo.Author.Uid = data.Get("user.userId").String()
 	parseInfo.Author.Name = data.Get("user.nickname").String()
