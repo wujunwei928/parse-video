@@ -33,7 +33,7 @@ func (z zuiYou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	res, err := client.R().
 		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
 		SetBody(postData).
-		Post("https://share.xiaochuankeji.cn/planck/share/post/detail")
+		Post("https://share.xiaochuankeji.cn/planck/share/post/detail_h5")
 	if err != nil {
 		return nil, err
 	}
