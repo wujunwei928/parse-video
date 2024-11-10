@@ -1,0 +1,14 @@
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  - id: check-yaml
+  - id: check-json
+  - id: check-toml
+  - id: fix-byte-order-marker
+  - id: check-merge-conflict
+  - id: check-added-large-files
+- repo: https://github.com/wujunwei928/golang-pre-commit-hooks
+  rev: v0.0.1
+  hooks:
+    - id: go-unit-tests
