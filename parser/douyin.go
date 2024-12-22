@@ -61,6 +61,10 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	// 获取视频播放地址
 	videoUrl := data.Get("video.play_addr.url_list.0").String()
 	videoUrl = strings.ReplaceAll(videoUrl, "playwm", "play")
+	data.Get("video.play_addr.url_list").ForEach(func(key, value gjson.Result) bool {
+		fmt.Println(strings.ReplaceAll(value.String(), "playwm", "play"))
+		return true
+	})
 
 	// 如果图集地址不为空时，因为没有视频，上面抖音返回的视频地址无法访问，置空处理
 	if len(images) > 0 {
