@@ -12,7 +12,7 @@ type piPiXia struct {
 }
 
 func (p piPiXia) parseVideoID(videoId string) (*VideoParseInfo, error) {
-	reqUrl := "https://h5.pipix.com/bds/webapi/item/detail/?item_id=" + videoId
+	reqUrl := "https://api.pipix.com/bds/cell/cell_comment/?offset=0&cell_type=1&api_version=1&cell_id=" + videoId + "&ac=wifi&channel=huawei_1319_64&aid=1319&app_name=super"
 	client := resty.New()
 	res, err := client.R().
 		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
@@ -20,8 +20,8 @@ func (p piPiXia) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	data := gjson.GetBytes(res.Body(), "data.item")
+	// data['data']['cell_comments'][0]['comment_info']['item']
+	data := gjson.GetBytes(res.Body(), "data.cell_comments.0.comment_info.item")
 	authorId := data.Get("author.id").String()
 
 	// 获取图集图片地址
@@ -34,7 +34,7 @@ func (p piPiXia) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		}
 	}
 
-	videoUrl := data.Get("video.video_download.url_list.0.url").String() // 备用视频地址, 可能有水印
+	videoUrl := data.Get("video.video_high.url_list.0.url").String() // 备用视频地址, 可能有水印
 	// comments中可能带有不带水印视频, comments可能为空, 尝试获取
 	for _, comment := range data.Get("comments").Array() {
 		commentVideoUrl := comment.Get("item.video.video_high.url_list.0.url").String()
@@ -46,7 +46,8 @@ func (p piPiXia) parseVideoID(videoId string) (*VideoParseInfo, error) {
 
 	author := data.Get("author.name").String()
 	avatar := data.Get("author.avatar.download_list.0.url").String()
-	title := data.Get("share.title").String()
+	// 该接口标题为content
+	title := data.Get("content").String()
 	cover := data.Get("cover.url_list.0.url").String()
 
 	parseRes := &VideoParseInfo{
