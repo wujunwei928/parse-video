@@ -38,11 +38,19 @@ func (r redBook) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	// 获取图集图片地址
 	imagesObjArr := data.Get("imageList").Array()
 	images := make([]string, 0, len(imagesObjArr))
+	imageLivePhotos := make([]string, 0, len(imagesObjArr))
 	if len(videoUrl) <= 0 {
 		for _, imageItem := range imagesObjArr {
 			imageUrl := imageItem.Get("urlDefault").String()
 			if len(imageUrl) > 0 {
 				images = append(images, imageUrl)
+			}
+			if imageItem.Get("livePhoto").Bool() {
+				for _, livePhotoItem := range imageItem.Get("stream.h264").Array() {
+					if livePhotoUrl := livePhotoItem.Get("masterUrl").String(); len(livePhotoUrl) > 0 {
+						imageLivePhotos = append(imageLivePhotos, livePhotoUrl)
+					}
+				}
 			}
 		}
 	}
@@ -53,6 +61,7 @@ func (r redBook) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 		CoverUrl: data.Get("imageList.0.urlDefault").String(),
 		Images:   images,
 	}
+	parseInfo.ImageLivePhotos = imageLivePhotos
 	parseInfo.Author.Uid = data.Get("user.userId").String()
 	parseInfo.Author.Name = data.Get("user.nickname").String()
 	parseInfo.Author.Avatar = data.Get("user.avatar").String()
