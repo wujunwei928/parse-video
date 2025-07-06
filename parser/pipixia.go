@@ -26,11 +26,13 @@ func (p piPiXia) parseVideoID(videoId string) (*VideoParseInfo, error) {
 
 	// 获取图集图片地址
 	imagesObjArr := data.Get("note.multi_image").Array()
-	images := make([]string, 0, len(imagesObjArr))
+	images := make([]ImgInfo, 0, len(imagesObjArr))
 	for _, imageItem := range imagesObjArr {
 		imageUrl := imageItem.Get("url_list.0.url").String()
 		if len(imageUrl) > 0 {
-			images = append(images, imageUrl)
+			images = append(images, ImgInfo{
+				Url: imageUrl,
+			})
 		}
 	}
 

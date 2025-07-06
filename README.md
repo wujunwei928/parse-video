@@ -93,17 +93,17 @@ curl 'http://127.0.0.1:8080/video/share/url/parse?url=视频分享链接' | jq
   "image_live_photos": []
 }
 ```
-| 字段名               | 说明                    | 
-|-------------------|-----------------------| 
-| author.uid        | 视频作者id                |
-| author.name       | 视频作者名称                |
-| author.avatar     | 视频作者头像                |
-| title             | 视频标题                  |
-| video_url         | 视频无水印链接               |
-| music_url         | 视频音乐链接                |
-| cover_url         | 视频封面                  |
-| images            | 图集图片地址列表              |
-| image_live_photos | 图集图片 LivePhoto 视频地址列表 |
+| 字段名                           | 说明                  | 
+|-------------------------------|---------------------| 
+| author.uid                    | 视频作者id              |
+| author.name                   | 视频作者名称              |
+| author.avatar                 | 视频作者头像              |
+| title                         | 视频标题                |
+| video_url                     | 视频无水印链接             |
+| music_url                     | 视频音乐链接              |
+| cover_url                     | 视频封面                |
+| images.[index].url            | 图集图片地址              |
+| images.[index].live_photo_url | 图集图片 livePhoto 视频地址 |
 > 字段除了视频地址, 其他字段可能为空
 
 # 依赖模块

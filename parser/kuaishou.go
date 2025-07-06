@@ -84,11 +84,13 @@ func (k kuaiShou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	// 获取图集
 	imageCdnHost := data.Get("ext_params.atlas.cdn.0").String()
 	imagesObjArr := data.Get("ext_params.atlas.list").Array()
-	images := make([]string, 0, len(imagesObjArr))
+	images := make([]ImgInfo, 0, len(imagesObjArr))
 	if len(imageCdnHost) > 0 && len(imagesObjArr) > 0 {
 		for _, imageItem := range imagesObjArr {
 			imageUrl := fmt.Sprintf("https://%s/%s", imageCdnHost, imageItem.String())
-			images = append(images, imageUrl)
+			images = append(images, ImgInfo{
+				Url: imageUrl,
+			})
 		}
 	}
 

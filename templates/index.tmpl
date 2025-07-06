@@ -119,24 +119,19 @@ function  setValue(){
             successHtml += '<a class="mdui-btn mdui-btn-raised" href="'+jsonObj.data.video_url+'" target="_blank" download="video" referrerpolicy="no-referrer">下载视频</a>';
         }
 
-        // 如果 jsonObj.data.image_live_photos 是数组， 并且长度大于0, 则 ul, li 展示新窗口打开的链接
-        if (jsonObj.data.image_live_photos && jsonObj.data.image_live_photos.length > 0) {
-            successHtml += "<hr/>";
-            successHtml += '<h4 class="mb-3">图集 LivePhoto</h4>';
-            successHtml += '<ul class="list-group">';
-            jsonObj.data.image_live_photos.forEach(function (item, index) {
-                // 仅显示序号和简短提示，而非完整链接，提升展示效果
-                successHtml += '<li class="list-group-item" style="text-align: center; margin: 1em 0;"><a href="' + item + '" target="_blank" referrerpolicy="no-referrer" class="mdui-text-color-theme-accent">图集 LivePhoto ' + (index + 1) + '</a></li>';
-            });
-            successHtml += '</ul>';
-        }
-
         // 如果 jsonObj.data.images 是数组， 并且长度大于0, 则img展示图片
-        if(jsonObj.data.images && jsonObj.data.images.length > 0){
+        if (jsonObj.data.images && jsonObj.data.images.length > 0) {
             successHtml += "<hr/>";
             successHtml += '<h4>图集</h4>';
-            jsonObj.data.images.forEach(function(item){
-                successHtml += '<img src="'+item+'" style="width: 160px; margin: 1em;"/>';
+            jsonObj.data.images.forEach(function (item) {
+                successHtml += '<div style="display: inline-block; margin: 1em; text-align: center;">';
+                successHtml += '<img src="' + item.url + '" style="width: 160px; display: block; margin-bottom: 0.5em;"/>';
+                // 如果 item.live_photo_url 不为空， 显示下载按钮
+                if (item.live_photo_url) {
+                    successHtml += '<a class="mdui-btn mdui-btn-raised" href="' + item.live_photo_url + '" target="_blank" download="video" referrerpolicy="no-referrer" style="text-transform: none;">下载LivePhoto</a>';
+                }
+
+                successHtml += '</div>';
             });
         }
 
