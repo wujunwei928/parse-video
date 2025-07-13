@@ -28,6 +28,13 @@ var files embed.FS
 func main() {
 	r := gin.Default()
 
+	// 根据相关环境变量，确定是否需要使用basic auth中间件验证用户
+	if os.Getenv("PARSE_VIDEO_USERNAME") != "" && os.Getenv("PARSE_VIDEO_PASSWORD") != "" {
+		r.Use(gin.BasicAuth(gin.Accounts{
+			os.Getenv("PARSE_VIDEO_USERNAME"): os.Getenv("PARSE_VIDEO_PASSWORD"),
+		}))
+	}
+
 	sub, err := fs.Sub(files, "templates")
 	if err != nil {
 		panic(err)

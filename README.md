@@ -59,6 +59,19 @@ res2, _ := parser.ParseVideoId(parser.SourceDouYin, "视频id")
 fmt.Printf("%#v", res2)
 ```
 
+# 本地运行
+```bash
+go run main.go
+```
+
+开启basic auth认证, 设置 PARSE_VIDEO_USERNAME， PARSE_VIDEO_PASSWORD 环境变量，不设置不开启，默认不开启
+```bash
+export PARSE_VIDEO_USERNAME=basic_auth_username
+export PARSE_VIDEO_PASSWORD=basic_auth_password
+go run main.go
+```
+
+
 # Docker
 获取 docker image
 ```bash
@@ -69,6 +82,11 @@ docker pull wujunwei928/parse-video
 ```bash
 docker run -d -p 8080:8080 wujunwei928/parse-video
 ```
+
+运行docker容器，开启basic auth认证
+```bash
+docker run -d -p 8080:8080 -e PARSE_VIDEO_USERNAME=basic_auth_username -e PARSE_VIDEO_PASSWORD=basic_auth_password wujunwei928/parse-video
+ ```
 
 查看前端页面  
 访问: http://127.0.0.1:8080/  
