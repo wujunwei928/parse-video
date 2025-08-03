@@ -23,6 +23,7 @@ const (
 	SourceXinPianChang = "xinpianchang" // 新片场
 	SourceHaoKan       = "haokan"       // 好看视频
 	SourceRedBook      = "redbook"      // 小红书
+	SourceBiliBili     = "bilibili"     // 哔哩哔哩
 )
 
 // http 相关
@@ -186,5 +187,12 @@ var videoSourceInfoMapping = map[string]videoSourceInfo{
 			"xhslink.com",
 		},
 		VideoShareUrlParser: redBook{},
+	},
+	SourceBiliBili: {
+		VideoShareUrlDomain: []string{
+			"bilibili.com",
+			"b23.tv",
+		},
+		VideoShareUrlParser: biliBili{},
 	},
 }
