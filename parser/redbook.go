@@ -55,6 +55,10 @@ func (r redBook) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 			imgInfo := ImgInfo{
 				Url: newUrl,
 			}
+			// 如果原图片网址中没有 notes_pre_post 关键字，不支持替换域名，使用原域名
+			if !strings.Contains(imageUrl, "notes_pre_post") {
+				imgInfo.Url = imageUrl
+			}
 			if imageItem.Get("livePhoto").Bool() {
 				for _, livePhotoItem := range imageItem.Get("stream.h264").Array() {
 					if livePhotoUrl := livePhotoItem.Get("masterUrl").String(); len(livePhotoUrl) > 0 {
