@@ -9,6 +9,22 @@ Golang短视频去水印, 视频目前支持20个平台, 图集目前支持4个�
 # 其他语言版本
 - [Python版本](https://github.com/wujunwei928/parse-video-py)
 
+# MCP 支持
+
+本项目现已支持 [MCP (Model Context Protocol)](https://modelcontextprotocol.io/)，提供标准化的工具接口供AI助手调用。
+
+## MCP 功能特性
+
+- **多传输模式**: 支持 stdio 和 SSE 两种传输协议
+- **混合运行**: 可同时运行 HTTP API 和 MCP 服务器
+- **完整工具集**: 提供5个核心视频解析工具
+- **平台资源**: 提供支持的平台信息资源
+
+## MCP 使用文档
+
+- [MCP 使用指南](./MCP_USAGE.md) - 详细的MCP配置和使用说明
+- [MCP SSE 使用指南](./MCP_SSE_USAGE.md) - SSE传输模式的详细说明
+
 # 支持平台
 ## 图集
 | 平台  | 状态 | 

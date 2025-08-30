@@ -30,12 +30,12 @@ type ExtractURLRequest struct {
 
 // PlatformInfo represents information about a supported platform
 type PlatformInfo struct {
-	Source              string   `json:"source"`
-	Name                string   `json:"name"`
-	Domains             []string `json:"domains"`
-	SupportsShareURL    bool     `json:"supports_share_url"`
-	SupportsVideoID     bool     `json:"supports_video_id"`
-	SupportsBatchParse  bool     `json:"supports_batch_parse"`
+	Source              string   `json:"source" mcp:"description=Platform source identifier (e.g., douyin, kuaishou)"`
+	Name                string   `json:"name" mcp:"description=Display name of the platform"`
+	Domains             []string `json:"domains" mcp:"description=List of supported domains for this platform"`
+	SupportsShareURL    bool     `json:"supports_share_url" mcp:"description=Whether this platform supports share URL parsing"`
+	SupportsVideoID     bool     `json:"supports_video_id" mcp:"description=Whether this platform supports video ID parsing"`
+	SupportsBatchParse  bool     `json:"supports_batch_parse" mcp:"description=Whether this platform supports batch parsing"`
 }
 
 // ConvertVideoParseInfo converts parser.VideoParseInfo to MCP compatible format
