@@ -10,7 +10,6 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mdui@1.0.0/dist/css/mdui.min.css"/>
 <script src="https://cdn.jsdelivr.net/npm/mdui@1.0.0/dist/js/mdui.min.js"></script>
-<script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/jquery/2.1.4/jquery.min.js"></script>
 </head>
 <body class="mdui-theme-primary-indigo mdui-theme-accent-pink">
 <style>
@@ -135,7 +134,7 @@ function  setValue(){
             });
         }
 
-        $(".down").html(successHtml);
+        document.querySelector(".down").innerHTML = successHtml;
     }else{
         mdui.snackbar({
             message: "解析失败,视频不存在或者链接不正确:<br/>" + jsonObj.msg

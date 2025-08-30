@@ -147,11 +147,13 @@ curl 'http://127.0.0.1:8080/video/share/url/parse?url=视频分享链接' | jq
 | [github.com/gin-gonic/gin](https://github.com/gin-gonic/gin)             | web框架            |
 | [github.com/go-resty/resty/v2](https://github.com/go-resty/resty/v2)     | HTTP 和 REST 客户端  |
 | [github.com/tidwall/gjson](https://github.com/tidwall/gjson)             | 使用一行代码获取JSON的值   |
-| [github.com/PuerkitoBio/goquery](https://github.com/PuerkitoBio/goquery) | jQuery语法解析html页面 |
+| [github.com/PuerkitoBio/goquery](https://github.com/PuerkitoBio/goquery) | 类jQuery语法解析html页面 |
+| [github.com/mark3labs/mcp-go](https://github.com/mark3labs/mcp-go)       | MCP (Model Context Protocol) 实现 |
 
 ```bash
 go get github.com/gin-gonic/gin
 go get github.com/go-resty/resty/v2
 go get github.com/tidwall/gjson
 go get github.com/PuerkitoBio/goquery
+go get github.com/mark3labs/mcp-go
 ```
