@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"flag"
 	"html/template"
 	"io/fs"
 	"log"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/wujunwei928/parse-video/mcp"
 	"github.com/wujunwei928/parse-video/parser"
 )
 
@@ -26,6 +28,63 @@ type HttpResponse struct {
 var files embed.FS
 
 func main() {
+	// Parse command line flags
+	mcpMode := flag.Bool("mcp", false, "Run as MCP server with stdio transport")
+	mcpSSEMode := flag.Bool("mcp-sse", false, "Run as MCP server with SSE transport")
+	mcpPort := flag.Int("mcp-port", 8081, "Port for MCP SSE server")
+	httpMode := flag.Bool("http", false, "Run as HTTP server only")
+	bothMode := flag.Bool("both", true, "Run both HTTP and MCP servers (default, uses SSE for MCP)")
+	flag.Parse()
+
+	// For mixed mode, default to SSE if not explicitly specified
+	useSSEForMixed := *bothMode && !*mcpMode && !*mcpSSEMode
+	
+	// Determine run mode
+	runMCP := *mcpMode || *mcpSSEMode || *bothMode
+	runHTTP := *httpMode || *bothMode || (!runMCP && !*httpMode)
+
+	// Start servers based on mode
+	if runMCP && runHTTP {
+		// Mixed mode: start both servers
+		log.Println("Starting in mixed mode: both HTTP and MCP servers")
+		
+		// Start MCP server in background
+		go func() {
+			if *mcpSSEMode || useSSEForMixed {
+				log.Printf("Starting MCP server with SSE transport on port %d", *mcpPort)
+				if err := mcp.RunMCPServerWithSSE(*mcpPort); err != nil {
+					log.Printf("MCP SSE server error: %v", err)
+				}
+			} else {
+				log.Println("Starting MCP server with stdio transport")
+				if err := mcp.RunMCPServerWithStdio(); err != nil {
+					log.Printf("MCP stdio server error: %v", err)
+				}
+			}
+		}()
+		
+		// Start HTTP server in foreground
+		startHTTPServer()
+	} else if runMCP {
+		// MCP only mode
+		if *mcpSSEMode {
+			log.Printf("Starting MCP server with SSE transport on port %d", *mcpPort)
+			if err := mcp.RunMCPServerWithSSE(*mcpPort); err != nil {
+				log.Fatalf("Failed to start MCP SSE server: %v", err)
+			}
+		} else {
+			log.Println("Starting MCP server with stdio transport")
+			if err := mcp.RunMCPServerWithStdio(); err != nil {
+				log.Fatalf("Failed to start MCP stdio server: %v", err)
+			}
+		}
+	} else if runHTTP {
+		// HTTP only mode
+		startHTTPServer()
+	}
+}
+
+func startHTTPServer() {
 	r := gin.Default()
 
 	// 根据相关环境变量，确定是否需要使用basic auth中间件验证用户
@@ -109,5 +168,4 @@ func main() {
 		log.Fatal("Server Shutdown:", err)
 	}
 	log.Println("Server exiting")
-
 }

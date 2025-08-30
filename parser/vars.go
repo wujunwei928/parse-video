@@ -196,3 +196,6 @@ var videoSourceInfoMapping = map[string]videoSourceInfo{
 		VideoShareUrlParser: biliBili{},
 	},
 }
+
+// VideoSourceInfoMapping 导出的视频渠道映射信息，供外部使用
+var VideoSourceInfoMapping = videoSourceInfoMapping
