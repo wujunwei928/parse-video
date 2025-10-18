@@ -38,7 +38,7 @@ func main() {
 
 	// For mixed mode, default to SSE if not explicitly specified
 	useSSEForMixed := *bothMode && !*mcpMode && !*mcpSSEMode
-	
+
 	// Determine run mode
 	runMCP := *mcpMode || *mcpSSEMode || *bothMode
 	runHTTP := *httpMode || *bothMode || (!runMCP && !*httpMode)
@@ -47,7 +47,7 @@ func main() {
 	if runMCP && runHTTP {
 		// Mixed mode: start both servers
 		log.Println("Starting in mixed mode: both HTTP and MCP servers")
-		
+
 		// Start MCP server in background
 		go func() {
 			if *mcpSSEMode || useSSEForMixed {
@@ -62,7 +62,7 @@ func main() {
 				}
 			}
 		}()
-		
+
 		// Start HTTP server in foreground
 		startHTTPServer()
 	} else if runMCP {
@@ -98,10 +98,10 @@ func startHTTPServer() {
 	if err != nil {
 		panic(err)
 	}
-	tmpl := template.Must(template.ParseFS(sub, "*.tmpl"))
+	tmpl := template.Must(template.ParseFS(sub, "*.html"))
 	r.SetHTMLTemplate(tmpl)
 	r.GET("/", func(c *gin.Context) {
-		c.HTML(200, "index.tmpl", gin.H{
+		c.HTML(200, "index.html", gin.H{
 			"title": "github.com/wujunwei928/parse-video Demo",
 		})
 	})
