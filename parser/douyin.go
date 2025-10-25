@@ -211,7 +211,22 @@ func (d douYin) parseVideoIdFromPath(urlPath string) (string, error) {
 		return "", errors.New("url path is empty")
 	}
 
-	urlPath = strings.Trim(urlPath, "/")
+	urlPathParse, err := url.Parse(urlPath)
+	if err != nil {
+		return "", err
+	}
+
+	//判断网页精选页面的视频
+	//https://www.douyin.com/jingxuan?modal_id=7555093909760789812
+	videoId := urlPathParse.Query().Get("modal_id")
+
+	if len(videoId) > 0 {
+		return videoId, nil
+	}
+
+	//判断其他页面的视频
+	//https://www.iesdouyin.com/share/video/7424432820954598707/?region=CN&mid=7424432976273869622&u_code=0
+	urlPath = strings.Trim(urlPathParse.Path, "/")
 	urlSplit := strings.Split(urlPath, "/")
 
 	// 获取最后一个元素
