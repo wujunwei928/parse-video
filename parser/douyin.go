@@ -8,9 +8,11 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/tidwall/gjson"
+	"golang.org/x/net/html"
 )
 
 type douYin struct{}
@@ -20,20 +22,57 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 
 	client := resty.New()
 	res, err := client.R().
-		SetHeader(HttpHeaderUserAgent, "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1 Edg/122.0.0.0").
+		SetHeader(HttpHeaderUserAgent, "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1").
 		Get(reqUrl)
 	if err != nil {
 		return nil, err
 	}
 
-	re := regexp.MustCompile(`window._ROUTER_DATA\s*=\s*(.*?)</script>`)
-	findRes := re.FindSubmatch(res.Body())
-	if len(findRes) < 2 {
-		return nil, errors.New("parse video json info from html fail")
+	isNote := false
+	resBody := res.Body()
+	canonical, err := d.getCanonicalFromHTML(string(resBody))
+	if err == nil && canonical != "" {
+		//判断字符串中是否有 /note/ 字符
+		if strings.Contains(canonical, "/note/") {
+			isNote = true
+		}
 	}
 
-	jsonBytes := bytes.TrimSpace(findRes[1])
-	data := gjson.GetBytes(jsonBytes, "loaderData.video_(id)/page.videoInfoRes.item_list.0")
+	var jsonBytes []byte
+	var data gjson.Result
+
+	//获取图集
+	if isNote {
+		webId := "75" + d.generateFixedLengthNumericID(15)
+		aBogus := d.randSeq(64)
+
+		reqUrl = fmt.Sprintf("https://www.iesdouyin.com/web/api/v2/aweme/slidesinfo/?reflow_source=reflow_page&web_id=%s&device_id=%s&aweme_ids=%%5B%s%%5D&request_source=200&a_bogus=%s", webId, webId, videoId, aBogus)
+		res, err = client.R().
+			SetHeader(HttpHeaderUserAgent, "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1").
+			Get(reqUrl)
+		if err != nil {
+			return nil, err
+		}
+
+		jsonBytes = res.Body()
+		data = gjson.GetBytes(jsonBytes, "aweme_details.0")
+		if !data.Exists() {
+			//fmt.Println(reqUrl, data)
+			//设置为，好让下面判断
+			isNote = false
+		}
+	}
+
+	if !isNote {
+		re := regexp.MustCompile(`window._ROUTER_DATA\s*=\s*(.*?)</script>`)
+		findRes := re.FindSubmatch(resBody)
+		if len(findRes) < 2 {
+			return nil, errors.New("parse video json info from html fail")
+		}
+
+		jsonBytes = bytes.TrimSpace(findRes[1])
+		data = gjson.GetBytes(jsonBytes, "loaderData.video_(id)/page.videoInfoRes.item_list.0")
+	}
 
 	if !data.Exists() {
 		filterObj := gjson.GetBytes(
@@ -52,32 +91,43 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	imagesObjArr := data.Get("images").Array()
 	images := make([]ImgInfo, 0, len(imagesObjArr))
 	for _, imageItem := range imagesObjArr {
-		imageUrl := imageItem.Get("url_list.0").String()
+		urlList := imageItem.Get("url_list").Array()
+		// 优先获取非 .webp 格式的图片 url
+		imageUrl := d.getNoWebpUrl(urlList)
 		if len(imageUrl) > 0 {
 			images = append(images, ImgInfo{
-				Url: imageUrl,
+				Url:          imageUrl,
+				LivePhotoUrl: imageItem.Get("video.play_addr.url_list.0").String(),
 			})
 		}
 	}
 
-	// 获取视频播放地址
-	videoUrl := data.Get("video.play_addr.url_list.0").String()
-	videoUrl = strings.ReplaceAll(videoUrl, "playwm", "play")
-	data.Get("video.play_addr.url_list").ForEach(func(key, value gjson.Result) bool {
-		fmt.Println(strings.ReplaceAll(value.String(), "playwm", "play"))
-		return true
-	})
+	var videoUrl string
+	if !isNote {
+		// 获取视频播放地址
+		videoUrl = data.Get("video.play_addr.url_list.0").String()
+		videoUrl = strings.ReplaceAll(videoUrl, "playwm", "play")
+		data.Get("video.play_addr.url_list").ForEach(func(key, value gjson.Result) bool {
+			//fmt.Println(strings.ReplaceAll(value.String(), "playwm", "play"))
+			return true
+		})
+	}
 
 	// 如果图集地址不为空时，因为没有视频，上面抖音返回的视频地址无法访问，置空处理
 	if len(images) > 0 {
 		videoUrl = ""
 	}
 
+	urlList := data.Get("video.cover.url_list").Array()
+	// 优先获取非 .webp 格式的图片 url
+	coverUrl := d.getNoWebpUrl(urlList)
+
 	videoInfo := &VideoParseInfo{
 		Title:    data.Get("desc").String(),
 		VideoUrl: videoUrl,
 		MusicUrl: "",
-		CoverUrl: data.Get("video.cover.url_list.0").String(),
+		//CoverUrl: data.Get("video.cover.url_list.0").String(),
+		CoverUrl: coverUrl,
 		Images:   images,
 	}
 	videoInfo.Author.Uid = data.Get("author.sec_uid").String()
@@ -191,4 +241,78 @@ func (d douYin) randSeq(n int) string {
 		b[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(b)
+}
+
+// 生成固定位数的随机数字（前导零）
+func (d douYin) generateFixedLengthNumericID(length int) string {
+	// 创建一个新的随机数生成器源
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	max2 := int64(1)
+	for i := 0; i < length; i++ {
+		max2 *= 10
+	}
+
+	randomNum := r.Int63n(max2)
+	return fmt.Sprintf("%0*d", length, randomNum)
+}
+
+// 优先获取非 .webp 格式的图片 url
+func (d douYin) getNoWebpUrl(urlList []gjson.Result) string {
+	var imageUrl string
+	// 手动遍历查找包含 .jpeg 或 .png 的 URL
+	found := false
+	for _, urllink := range urlList {
+		urlStr := urllink.String()
+		//if strings.Contains(urlStr, ".jpeg") || strings.Contains(urlStr, ".png") {
+		if !strings.Contains(urlStr, ".webp") {
+			imageUrl = urlStr
+			found = true
+			break
+		}
+	}
+
+	// 如果没找到，使用第一项
+	if !found && len(urlList) > 0 {
+		imageUrl = urlList[0].String()
+	}
+
+	return imageUrl
+}
+
+// 从 HTML 字符串获取 canonical URL
+func (d douYin) getCanonicalFromHTML(htmlContent string) (string, error) {
+	doc, err := html.Parse(strings.NewReader(htmlContent))
+	if err != nil {
+		return "", err
+	}
+
+	return d.findCanonical(doc), nil
+}
+
+// 递归查找 canonical link
+func (d douYin) findCanonical(n *html.Node) string {
+	if n.Type == html.ElementNode && n.Data == "link" {
+		var rel, href string
+		for _, attr := range n.Attr {
+			switch attr.Key {
+			case "rel":
+				rel = attr.Val
+			case "href":
+				href = attr.Val
+			}
+		}
+		if rel == "canonical" && href != "" {
+			return href
+		}
+	}
+
+	// 递归遍历子节点
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if result := d.findCanonical(c); result != "" {
+			return result
+		}
+	}
+
+	return ""
 }
