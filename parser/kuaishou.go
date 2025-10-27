@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"net/http"
 	"regexp"
 	"strings"
 
@@ -15,8 +16,17 @@ type kuaiShou struct{}
 
 func (k kuaiShou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	client := resty.New()
-	// disable redirects in the HTTP client, get params before redirects
-	client.SetRedirectPolicy(resty.NoRedirectPolicy())
+	//// disable redirects in the HTTP client, get params before redirects
+	//client.SetRedirectPolicy(resty.NoRedirectPolicy())
+	// 设置自定义重定向策略
+	client.SetRedirectPolicy(resty.RedirectPolicyFunc(func(req *http.Request, via []*http.Request) error {
+		fmt.Println(req.URL.Path)
+		// 检查是否 /short-video/3xb58q4e3egqttc 这样的路径，如果是就继续跟随 Location 重定向，否则就停止
+		if matched, _ := regexp.MatchString(`^/short-video/[^/]+/?$`, req.URL.Path); !matched {
+			return resty.ErrAutoRedirectDisabled
+		}
+		return nil
+	}))
 	shareRes, err := client.R().
 		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
 		SetHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7").
