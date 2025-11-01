@@ -34,7 +34,7 @@ const (
 	HttpHeaderCookie      = "Cookie"
 
 	// DefaultUserAgent 默认UserAgent
-	DefaultUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1"
+	DefaultUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1"
 )
 
 // videoShareUrlParser 根据视频分享地址解析
@@ -87,7 +87,7 @@ var videoSourceInfoMapping = map[string]videoSourceInfo{
 		VideoIdParser:       douYin{},
 	},
 	SourceKuaiShou: {
-		VideoShareUrlDomain: []string{"v.kuaishou.com"},
+		VideoShareUrlDomain: []string{"v.kuaishou.com", "www.kuaishou.com"},
 		VideoShareUrlParser: kuaiShou{},
 	},
 	SourceZuiYou: {

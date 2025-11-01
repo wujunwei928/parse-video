@@ -140,6 +140,10 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		d.getRedirectUrl(videoInfo)
 	}
 
+	if videoInfo.VideoUrl == "" && len(videoInfo.Images) == 0 {
+		return nil, errors.New("没有作品")
+	}
+
 	return videoInfo, nil
 }
 
