@@ -188,9 +188,12 @@ func (w weiBo) parseHtmlPage(htmlBody []byte) (*VideoParseInfo, error) {
 				largePicUrl = pic.Get("url").String()
 			}
 
+			livePhotoUrl := pic.Get("videoSrc").String()
+
 			if largePicUrl != "" {
 				images = append(images, ImgInfo{
 					Url: largePicUrl,
+					LivePhotoUrl: livePhotoUrl,
 				})
 			}
 		}
