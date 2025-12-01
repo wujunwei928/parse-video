@@ -7,9 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/tidwall/gjson"
-
 	"github.com/go-resty/resty/v2"
+	"github.com/tidwall/gjson"
 )
 
 type redBook struct{}
@@ -34,30 +33,55 @@ func (r redBook) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	nodeId := gjson.GetBytes(jsonBytes, "note.currentNoteId").String()
 	data := gjson.GetBytes(jsonBytes, fmt.Sprintf("note.noteDetailMap.%s.note", nodeId))
 
+	//判断多种不同的格式的情况
+	if len(nodeId) <= 0 {
+		nodeId = gjson.GetBytes(jsonBytes, "noteData.data.noteData.noteId").String()
+		data = gjson.GetBytes(jsonBytes, "noteData.data.noteData")
+		if len(nodeId) <= 0 {
+			nodeId = gjson.GetBytes(jsonBytes, "noteData.noteId").String()
+			data = gjson.GetBytes(jsonBytes, "noteData")
+		}
+	}
+
 	videoUrl := data.Get("video.media.stream.h264.0.masterUrl").String()
 
 	// 获取图集图片地址
 	imagesObjArr := data.Get("imageList").Array()
+
 	images := make([]ImgInfo, 0, len(imagesObjArr))
 	if len(videoUrl) <= 0 {
 		for _, imageItem := range imagesObjArr {
+
 			imageUrl := imageItem.Get("urlDefault").String()
 			if len(imageUrl) <= 0 {
-				continue
+				imageUrl = imageItem.Get("url").String()
+				if len(imageUrl) <= 0 {
+					continue
+				}
 			}
-			imgId := strings.Split(imageUrl[strings.LastIndex(imageUrl, "/")+1:], "!")[0]
+
+			imgSuffix := strings.Split(imageUrl[strings.LastIndex(imageUrl, "/")+1:], "!")
+			imgId := imgSuffix[0]
+			imgSuffixName := "jpg"
+
+			//判断后缀名不是 jpg 时使用 png 格式, imgSuffix[1]="h5_1080jpg"
+			if !strings.HasSuffix(imgSuffix[1], "jpg") {
+				imgSuffixName = "png"
+			}
+
 			// 如果链接中带有 spectrum/ , 替换域名时需要带上
 			spectrumStr := ""
 			if strings.Contains(imageUrl, "spectrum") {
 				spectrumStr = "spectrum/"
 			}
-			newUrl := fmt.Sprintf("https://ci.xiaohongshu.com/notes_pre_post/%s%s?imageView2/format/jpg", spectrumStr, imgId)
+			newUrl := fmt.Sprintf("https://ci.xiaohongshu.com/notes_pre_post/%s%s?imageView2/format/%s", spectrumStr, imgId, imgSuffixName)
 			imgInfo := ImgInfo{
 				Url: newUrl,
 			}
 			// 如果原图片网址中没有 notes_pre_post 关键字，不支持替换域名，使用原域名
 			if !strings.Contains(imageUrl, "notes_pre_post") {
-				imgInfo.Url = imageUrl
+				//imgInfo.Url = imageUrl
+				imgInfo.Url = fmt.Sprintf("https://ci.xiaohongshu.com/%s?imageView2/format/%s", imgId, imgSuffixName)
 			}
 			if imageItem.Get("livePhoto").Bool() {
 				for _, livePhotoItem := range imageItem.Get("stream.h264").Array() {
