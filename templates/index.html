@@ -10,7 +10,8 @@
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mdui@1.0.0/dist/css/mdui.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/mdui@1.0.0/dist/js/mdui.min.js"></script>
-    <!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 </head>
 <body>
 <style>
@@ -2873,15 +2874,21 @@ function setValue() {
         // 如果 jsonObj.data.images 是数组， 并且长度大于0, 则img展示图片
         if (jsonObj.data.images && jsonObj.data.images.length > 0) {
             successHtml += "<hr/>";
-            successHtml += '<h4>图集</h4>';
-            jsonObj.data.images.forEach(function (item) {
+            successHtml += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1em;">';
+            successHtml += '<h4 style="margin: 0;">图集</h4>';
+            successHtml += '<button class="mdui-btn mdui-color-theme-accent mdui-ripple" onclick="downloadAllImages(\'' + encodeURIComponent(JSON.stringify(jsonObj.data.images)) + '\', \'' + (jsonObj.data.title || '').replace(/'/g, "\\'") + '\')"><span>下载全部图片</span></button>';
+            successHtml += '</div>';
+
+            jsonObj.data.images.forEach(function (item, index) {
                 successHtml += '<div style="display: inline-block; margin: 1em; text-align: center;">';
                 successHtml += '<img src="' + item.url + '" style="width: 160px; display: block; margin-bottom: 0.5em;"/>';
+                successHtml += '<div style="margin-top: 0.5em;">';
+                successHtml += '<a class="mdui-btn mdui-btn-raised" href="' + item.url + '" target="_blank" download="image_' + (index + 1) + '.jpg" referrerpolicy="no-referrer" style="text-transform: none; margin-right: 0.5em;"><span>下载图片</span></a>';
                 // 如果 item.live_photo_url 不为空， 显示下载按钮
                 if (item.live_photo_url) {
-                    successHtml += '<a class="mdui-btn mdui-btn-raised" href="' + item.live_photo_url + '" target="_blank" download="video" referrerpolicy="no-referrer" style="text-transform: none;"><span>下载LivePhoto</span></a>';
+                    successHtml += '<a class="mdui-btn mdui-btn-raised" href="' + item.live_photo_url + '" target="_blank" download="live_photo_' + (index + 1) + '.mp4" referrerpolicy="no-referrer" style="text-transform: none;"><span>下载LivePhoto</span></a>';
                 }
-
+                successHtml += '</div>';
                 successHtml += '</div>';
             });
         }
@@ -2897,6 +2904,128 @@ function setValue() {
 // 新增清空输入框内容的函数
 function clearInput() {
     document.getElementById("url").value = "";
+}
+
+// 批量下载图片函数
+async function downloadAllImages(imagesData, title) {
+    try {
+        // 解码图片数据
+        const images = JSON.parse(decodeURIComponent(imagesData));
+
+        if (!images || images.length === 0) {
+            mdui.snackbar({
+                message: '没有可下载的图片'
+            });
+            return;
+        }
+
+        // 显示下载进度提示
+        const progressMsg = document.createElement('div');
+        progressMsg.innerHTML = `<div class="loading">正在准备下载 ${images.length} 张图片</div>`;
+        document.body.appendChild(progressMsg);
+
+        // 创建JSZip实例
+        const zip = new JSZip();
+        const imgFolder = zip.folder("images");
+
+        // 下载所有图片
+        const downloadPromises = images.map(async (item, index) => {
+            try {
+                const response = await fetch(item.url, {
+                    headers: {
+                        'Referer': 'https://www.douyin.com/',
+                        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const blob = await response.blob();
+                const fileName = `image_${String(index + 1).padStart(3, '0')}.${getImageExtension(item.url)}`;
+                imgFolder.file(fileName, blob);
+
+                return { success: true, index: index + 1 };
+            } catch (error) {
+                console.error(`下载第 ${index + 1} 张图片失败:`, error);
+                return { success: false, index: index + 1, error: error.message };
+            }
+        });
+
+        // 等待所有图片下载完成
+        const results = await Promise.all(downloadPromises);
+
+        // 移除进度提示
+        progressMsg.remove();
+
+        // 统计下载结果
+        const successCount = results.filter(r => r.success).length;
+        const failedCount = results.length - successCount;
+
+        if (successCount === 0) {
+            mdui.snackbar({
+                message: '所有图片下载失败，请检查网络连接'
+            });
+            return;
+        }
+
+        // 生成ZIP文件
+        const zipBlob = await zip.generateAsync({
+            type: "blob",
+            compression: "DEFLATE",
+            compressionOptions: { level: 6 }
+        });
+
+        // 生成文件名
+        const safeTitle = title.replace(/[^\w\s-]/g, '').trim() || 'images';
+        const fileName = `${safeTitle}_${new Date().getTime()}.zip`;
+
+        // 下载ZIP文件
+        saveAs(zipBlob, fileName);
+
+        // 显示下载结果
+        let message = `成功下载 ${successCount} 张图片`;
+        if (failedCount > 0) {
+            message += `，${failedCount} 张失败`;
+        }
+        message += '，已打包为ZIP文件';
+
+        mdui.snackbar({
+            message: message,
+            timeout: 5000
+        });
+
+    } catch (error) {
+        console.error('批量下载失败:', error);
+        mdui.snackbar({
+            message: '批量下载失败：' + error.message,
+            timeout: 5000
+        });
+    }
+}
+
+// 获取图片文件扩展名
+function getImageExtension(url) {
+    try {
+        const urlObj = new URL(url);
+        const pathname = urlObj.pathname.toLowerCase();
+
+        if (pathname.endsWith('.jpg') || pathname.endsWith('.jpeg')) {
+            return 'jpg';
+        } else if (pathname.endsWith('.png')) {
+            return 'png';
+        } else if (pathname.endsWith('.gif')) {
+            return 'gif';
+        } else if (pathname.endsWith('.webp')) {
+            return 'webp';
+        } else {
+            // 默认返回jpg
+            return 'jpg';
+        }
+    } catch (error) {
+        return 'jpg';
+    }
 }
 
 // 添加动画样式
