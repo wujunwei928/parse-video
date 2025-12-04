@@ -82,7 +82,7 @@ func (w weiBo) parsePostUrl(postId string, originalUrl string) (*VideoParseInfo,
 	client := resty.New()
 
 	res, err := client.R().
-		SetHeader(HttpHeaderUserAgent, "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1").
+		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
 		SetHeader(HttpHeaderReferer, "https://m.weibo.cn/").
 		SetHeader(HttpHeaderContentType, "application/json;charset=UTF-8").
 		SetHeader("X-Requested-With", "XMLHttpRequest").
@@ -129,9 +129,14 @@ func (w weiBo) parseMobileApiData(data gjson.Result) (*VideoParseInfo, error) {
 				largePicUrl = pic.Get("url").String()
 			}
 
+			// 微博示例：https://weibo.com/6871895822/5211295285513194
+			// 获取 live photo URL
+			livePhotoUrl := pic.Get("videoSrc").String()
+
 			if largePicUrl != "" {
 				images = append(images, ImgInfo{
-					Url: largePicUrl,
+					Url:          largePicUrl,
+					LivePhotoUrl: livePhotoUrl,
 				})
 			}
 		}
@@ -183,9 +188,12 @@ func (w weiBo) parseHtmlPage(htmlBody []byte) (*VideoParseInfo, error) {
 				largePicUrl = pic.Get("url").String()
 			}
 
+			livePhotoUrl := pic.Get("videoSrc").String()
+
 			if largePicUrl != "" {
 				images = append(images, ImgInfo{
 					Url: largePicUrl,
+					LivePhotoUrl: livePhotoUrl,
 				})
 			}
 		}

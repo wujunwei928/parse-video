@@ -22,7 +22,7 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 
 	client := resty.New()
 	res, err := client.R().
-		SetHeader(HttpHeaderUserAgent, "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1").
+		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
 		Get(reqUrl)
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	resBody := res.Body()
 	canonical, err := d.getCanonicalFromHTML(string(resBody))
 	if err == nil && canonical != "" {
-		//判断字符串中是否有 /note/ 字符
+		// 判断字符串中是否有 /note/ 字符
 		if strings.Contains(canonical, "/note/") {
 			isNote = true
 		}
@@ -41,14 +41,14 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	var jsonBytes []byte
 	var data gjson.Result
 
-	//获取图集
+	// 获取图集
 	if isNote {
 		webId := "75" + d.generateFixedLengthNumericID(15)
 		aBogus := d.randSeq(64)
 
 		reqUrl = fmt.Sprintf("https://www.iesdouyin.com/web/api/v2/aweme/slidesinfo/?reflow_source=reflow_page&web_id=%s&device_id=%s&aweme_ids=%%5B%s%%5D&request_source=200&a_bogus=%s", webId, webId, videoId, aBogus)
 		res, err = client.R().
-			SetHeader(HttpHeaderUserAgent, "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1").
+			SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
 			Get(reqUrl)
 		if err != nil {
 			return nil, err
@@ -57,7 +57,6 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		jsonBytes = res.Body()
 		data = gjson.GetBytes(jsonBytes, "aweme_details.0")
 		if !data.Exists() {
-			//fmt.Println(reqUrl, data)
 			//设置为，好让下面判断
 			isNote = false
 		}
@@ -126,7 +125,7 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		Title:    data.Get("desc").String(),
 		VideoUrl: videoUrl,
 		MusicUrl: "",
-		//CoverUrl: data.Get("video.cover.url_list.0").String(),
+		// CoverUrl: data.Get("video.cover.url_list.0").String(),
 		CoverUrl: coverUrl,
 		Images:   images,
 	}
@@ -141,7 +140,7 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	}
 
 	if videoInfo.VideoUrl == "" && len(videoInfo.Images) == 0 {
-		return nil, errors.New("没有作品")
+		return nil, errors.New("解析失败")
 	}
 
 	return videoInfo, nil
@@ -220,16 +219,16 @@ func (d douYin) parseVideoIdFromPath(urlPath string) (string, error) {
 		return "", err
 	}
 
-	//判断网页精选页面的视频
-	//https://www.douyin.com/jingxuan?modal_id=7555093909760789812
+	// 判断网页精选页面的视频
+	// https://www.douyin.com/jingxuan?modal_id=7555093909760789812
 	videoId := urlPathParse.Query().Get("modal_id")
 
 	if len(videoId) > 0 {
 		return videoId, nil
 	}
 
-	//判断其他页面的视频
-	//https://www.iesdouyin.com/share/video/7424432820954598707/?region=CN&mid=7424432976273869622&u_code=0
+	// 判断其他页面的视频
+	// https://www.iesdouyin.com/share/video/7424432820954598707/?region=CN&mid=7424432976273869622&u_code=0
 	urlPath = strings.Trim(urlPathParse.Path, "/")
 	urlSplit := strings.Split(urlPath, "/")
 
