@@ -10,8 +10,8 @@
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mdui@1.0.0/dist/css/mdui.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/mdui@1.0.0/dist/js/mdui.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 </head>
 <body>
 <style>
@@ -2876,7 +2876,19 @@ function setValue() {
             successHtml += "<hr/>";
             successHtml += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1em;">';
             successHtml += '<h4 style="margin: 0;">图集</h4>';
-            successHtml += '<button class="mdui-btn mdui-color-theme-accent mdui-ripple" onclick="downloadAllImages(\'' + encodeURIComponent(JSON.stringify(jsonObj.data.images)) + '\', \'' + (jsonObj.data.title || '').replace(/'/g, "\\'") + '\')"><span>下载全部图片</span></button>';
+
+            // 将图片数据存储到全局变量,避免在HTML属性中传递大量数据
+            const downloadDataId = 'download_data_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            window[downloadDataId] = {
+                images: jsonObj.data.images,
+                title: jsonObj.data.title || ''
+            };
+
+            // 使用data属性存储ID,点击时读取全局变量
+            successHtml += '<button class="mdui-btn mdui-color-theme-accent mdui-ripple" ' +
+                          'data-download-id="' + downloadDataId + '" ' +
+                          'onclick="handleDownloadClick(this)"><span>下载全部图片</span></button>';
+
             successHtml += '</div>';
 
             jsonObj.data.images.forEach(function (item, index) {
@@ -2906,11 +2918,60 @@ function clearInput() {
     document.getElementById("url").value = "";
 }
 
+// 处理下载按钮点击事件
+function handleDownloadClick(button) {
+    try {
+        const downloadDataId = button.getAttribute('data-download-id');
+        if (!downloadDataId) {
+            mdui.snackbar({
+                message: '下载数据ID不存在,请刷新页面重试'
+            });
+            return;
+        }
+
+        const downloadData = window[downloadDataId];
+        if (!downloadData || !downloadData.images) {
+            mdui.snackbar({
+                message: '下载数据不存在,请刷新页面重试'
+            });
+            return;
+        }
+
+        // 调用批量下载函数
+        downloadAllImages(downloadData.images, downloadData.title);
+
+        // 清理全局变量(可选,如果数据量大可以考虑清理)
+        // delete window[downloadDataId];
+    } catch (error) {
+        console.error('处理下载点击失败:', error);
+        mdui.snackbar({
+            message: '启动下载失败:' + error.message
+        });
+    }
+}
+
 // 批量下载图片函数
 async function downloadAllImages(imagesData, title) {
     try {
-        // 解码图片数据
-        const images = JSON.parse(decodeURIComponent(imagesData));
+        // 检查必要的库是否加载
+        if (typeof JSZip === 'undefined') {
+            mdui.snackbar({
+                message: 'JSZip库未加载,请检查网络连接或刷新页面重试',
+                timeout: 5000
+            });
+            return;
+        }
+
+        if (typeof saveAs === 'undefined') {
+            mdui.snackbar({
+                message: 'FileSaver.js库未加载,请检查网络连接或刷新页面重试',
+                timeout: 5000
+            });
+            return;
+        }
+
+        // imagesData 现在直接是图片数组,不需要解码
+        const images = imagesData;
 
         if (!images || images.length === 0) {
             mdui.snackbar({
