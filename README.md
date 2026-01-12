@@ -9,6 +9,24 @@ Golang短视频去水印, 视频目前支持20个平台, 图集目前支持4个�
 # 其他语言版本
 - [Python版本](https://github.com/wujunwei928/parse-video-py)
 
+---
+
+<div align="center">
+
+##  🚀 GLM Coding 限时优惠！性能强劲 量大管饱
+
+### 🎁 智谱 GLM Coding 超值订阅，邀你一起"薅羊毛"！
+
+**本项目前端多套主体样式和后端逻辑均有用到GLM辅助开发, 绝对性能够用, 又量大管饱.**
+
+[立即开拼，享限时惊喜价, 首购低至4折！](https://www.bigmodel.cn/glm-coding?ic=KUS7WQB5UI)
+
+<img src="resources/BigmodelPoster.png" alt="拼好模活动海报" width="300">
+
+---
+
+</div>
+
 # MCP 支持
 
 本项目现已支持 [MCP (Model Context Protocol)](https://modelcontextprotocol.io/)，提供标准化的工具接口供AI助手调用。
