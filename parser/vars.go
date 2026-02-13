@@ -24,6 +24,7 @@ const (
 	SourceHaoKan       = "haokan"       // 好看视频
 	SourceRedBook      = "redbook"      // 小红书
 	SourceBiliBili     = "bilibili"     // 哔哩哔哩
+	SourceTwitter      = "twitter"      // X/Twitter
 )
 
 // http 相关
@@ -194,6 +195,15 @@ var videoSourceInfoMapping = map[string]videoSourceInfo{
 			"b23.tv",
 		},
 		VideoShareUrlParser: biliBili{},
+	},
+	SourceTwitter: {
+		VideoShareUrlDomain: []string{
+			"x.com",
+			"twitter.com",
+			"t.co",
+		},
+		VideoShareUrlParser: twitter{},
+		VideoIdParser:       twitter{},
 	},
 }
 
