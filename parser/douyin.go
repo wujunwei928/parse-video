@@ -113,9 +113,15 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		})
 	}
 
+	// 获取音频地址（图集时，video.play_addr.uri 是音频地址；视频时不是音频）
+	musicUrl := data.Get("video.play_addr.uri").String()
+
 	// 如果图集地址不为空时，因为没有视频，上面抖音返回的视频地址无法访问，置空处理
+	// 图集时，musicUrl 是音频地址；视频时，musicUrl 不是音频，置空
 	if len(images) > 0 {
 		videoUrl = ""
+	} else {
+		musicUrl = ""
 	}
 
 	urlList := data.Get("video.cover.url_list").Array()
@@ -125,7 +131,7 @@ func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	videoInfo := &VideoParseInfo{
 		Title:    data.Get("desc").String(),
 		VideoUrl: videoUrl,
-		MusicUrl: "",
+		MusicUrl: musicUrl,
 		//CoverUrl: data.Get("video.cover.url_list.0").String(),
 		CoverUrl: coverUrl,
 		Images:   images,

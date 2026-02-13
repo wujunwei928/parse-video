@@ -2871,6 +2871,11 @@ function setValue() {
             successHtml += '<a class="mdui-btn mdui-btn-raised" href="' + jsonObj.data.video_url + '" target="_blank" download="video" referrerpolicy="no-referrer"><span>下载视频</span></a>';
         }
 
+        // 如果music_url不为空, 则显示下载音频按钮
+        if (jsonObj.data.music_url && jsonObj.data.music_url != "") {
+            successHtml += '<a class="mdui-btn mdui-btn-raised" href="' + jsonObj.data.music_url + '" target="_blank" download="audio" referrerpolicy="no-referrer"><span>下载音频</span></a>';
+        }
+
         // 如果 jsonObj.data.images 是数组， 并且长度大于0, 则img展示图片
         if (jsonObj.data.images && jsonObj.data.images.length > 0) {
             successHtml += "<hr/>";
