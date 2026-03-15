@@ -28,8 +28,13 @@ func (b biliBili) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	}
 	var viewResp biliViewResponse
 	if err := json.Unmarshal(viewRespBytes, &viewResp); err != nil {
+		return nil, fmt.Errorf("解析视频信息响应失败: %w", err)
 	}
-	if viewResp.Code != 0 || len(viewResp.Data.Pages) == 0 {
+	if viewResp.Code != 0 {
+		return nil, fmt.Errorf("B站API返回错误: %s (code: %d)", viewResp.Message, viewResp.Code)
+	}
+	if len(viewResp.Data.Pages) == 0 {
+		return nil, fmt.Errorf("视频没有可用的分页数据")
 	}
 	firstPageCID := viewResp.Data.Pages[0].Cid
 
