@@ -4,15 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"text/tabwriter"
 
 	"github.com/wujunwei928/parse-video/parser"
 )
 
 const (
-	FormatText  = "text"
-	FormatJSON  = "json"
-	FormatTable = "table"
+	FormatText = "text"
+	FormatJSON = "json"
 )
 
 type batchResult struct {
@@ -39,19 +37,12 @@ func (r batchResult) toMarshal() marshalBatchResult {
 	return marshalBatchResult{Input: r.Input, Status: status, Data: r.Data, Error: errMsg}
 }
 
-func (r batchResult) statusText() string {
-	if r.Failed {
-		return "失败"
-	}
-	return "成功"
-}
-
 func validateFormat(format string) error {
 	switch format {
-	case FormatText, FormatJSON, FormatTable:
+	case FormatText, FormatJSON:
 		return nil
 	default:
-		return fmt.Errorf("不支持的输出格式: %s，可选值: json, table, text", format)
+		return fmt.Errorf("不支持的输出格式: %s，可选值: json, text", format)
 	}
 }
 
@@ -99,39 +90,10 @@ func formatJSONBatch(w io.Writer, items []batchResult) error {
 	return nil
 }
 
-func formatTable(w io.Writer, items []batchResult) {
-	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(tw, "输入\t状态\t标题\t作者\t视频地址")
-	for _, item := range items {
-		if item.Data != nil {
-			fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n",
-				truncate(item.Input, 30), item.statusText(),
-				truncate(item.Data.Title, 15), truncate(item.Data.Author.Name, 10),
-				item.Data.VideoUrl)
-		} else {
-			fmt.Fprintf(tw, "%s\t%s\t-\t-\t%s\n",
-				truncate(item.Input, 30), item.statusText(), item.ErrMsg)
-		}
-	}
-	tw.Flush()
-}
-
-func truncate(s string, maxLen int) string {
-	r := []rune(s)
-	if len(r) <= maxLen {
-		return s
-	}
-	return string(r[:maxLen-3]) + "..."
-}
-
-func outputResult(w io.Writer, format string, input string, info *parser.VideoParseInfo) error {
+func outputResult(w io.Writer, format string, info *parser.VideoParseInfo) error {
 	switch format {
 	case FormatJSON:
 		return formatJSONOutput(w, info)
-	case FormatTable:
-		items := []batchResult{{Input: input, Failed: false, Data: info}}
-		formatTable(w, items)
-		return nil
 	default:
 		formatTextOutput(w, info)
 		return nil
@@ -142,9 +104,6 @@ func outputBatch(w io.Writer, format string, items []batchResult) error {
 	switch format {
 	case FormatJSON:
 		return formatJSONBatch(w, items)
-	case FormatTable:
-		formatTable(w, items)
-		return nil
 	default:
 		for i, item := range items {
 			if i > 0 {

@@ -45,7 +45,7 @@ var parseCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("解析失败: %w", err)
 			}
-			return outputResult(os.Stdout, format, inputs[0], info)
+			return outputResult(os.Stdout, format, info)
 		}
 		return runBatchParse(inputs, format)
 	},
@@ -54,7 +54,7 @@ var parseCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(parseCmd)
 	parseCmd.Flags().StringP("file", "f", "", "从文件读取链接（每行一个，- 代表 stdin）")
-	parseCmd.Flags().String("format", FormatText, "输出格式: json, table, text")
+	parseCmd.Flags().String("format", FormatText, "输出格式: json, text")
 }
 
 func readInputsFromFile(filePath string) ([]string, error) {

@@ -264,29 +264,6 @@ func TestFormatJSONBatch(t *testing.T) {
 	}
 }
 
-func TestFormatTable(t *testing.T) {
-	info := &parser.VideoParseInfo{}
-	info.Author.Name = "张三"
-	info.Title = "表格测试"
-	info.VideoUrl = "https://example.com/video.mp4"
-
-	items := []batchResult{
-		{Input: "https://v.douyin.com/xxx", Failed: false, Data: info},
-		{Input: "https://bad.url", Failed: true, ErrMsg: "解析失败"},
-	}
-
-	out := &bytes.Buffer{}
-	formatTable(out, items)
-
-	result := out.String()
-	if !strings.Contains(result, "表格测试") {
-		t.Errorf("table 输出应包含标题，实际: %s", result)
-	}
-	if !strings.Contains(result, "失败") {
-		t.Errorf("table 输出应包含失败状态，实际: %s", result)
-	}
-}
-
 func TestValidateFormat(t *testing.T) {
 	tests := []struct {
 		input string
@@ -294,7 +271,7 @@ func TestValidateFormat(t *testing.T) {
 	}{
 		{"text", true},
 		{"json", true},
-		{"table", true},
+		{"table", false},
 		{"xml", false},
 		{"", false},
 	}
@@ -305,24 +282,6 @@ func TestValidateFormat(t *testing.T) {
 		}
 		if !tt.valid && err == nil {
 			t.Errorf("validateFormat(%q) 应报错", tt.input)
-		}
-	}
-}
-
-func TestTruncate(t *testing.T) {
-	tests := []struct {
-		input  string
-		maxLen int
-		want   string
-	}{
-		{"hello", 10, "hello"},
-		{"hello world", 8, "hello..."},
-		{"你好世界测试", 4, "你..."},
-	}
-	for _, tt := range tests {
-		got := truncate(tt.input, tt.maxLen)
-		if got != tt.want {
-			t.Errorf("truncate(%q, %d) = %q, want %q", tt.input, tt.maxLen, got, tt.want)
 		}
 	}
 }
