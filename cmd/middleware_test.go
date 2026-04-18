@@ -1,0 +1,104 @@
+package cmd
+
+import (
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/gin-gonic/gin"
+)
+
+func TestRecoveryMiddleware(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(recoveryMiddleware())
+	r.GET("/panic", func(c *gin.Context) {
+		panic("test panic")
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/panic", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != 500 {
+		t.Errorf("panic 应返回 500，实际: %d", w.Code)
+	}
+	body := w.Body.String()
+	if !containsJSONField(body, "status", "error") {
+		t.Errorf("应返回 error 状态，实际: %s", body)
+	}
+	if !containsJSONField(body, "code", ErrInternal) {
+		t.Errorf("应返回 INTERNAL_ERROR 错误码，实际: %s", body)
+	}
+}
+
+func TestCORSMiddlewareDefaultOrigin(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(corsMiddleware("*"))
+	r.GET("/test", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/test", nil)
+	req.Header.Set("Origin", "http://example.com")
+	r.ServeHTTP(w, req)
+
+	if w.Header().Get("Access-Control-Allow-Origin") != "*" {
+		t.Errorf("CORS Origin 应为 *，实际: %s", w.Header().Get("Access-Control-Allow-Origin"))
+	}
+}
+
+func TestCORSMiddlewarePreflight(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(corsMiddleware("*"))
+	r.OPTIONS("/test", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("OPTIONS", "/test", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != 204 {
+		t.Errorf("预检应返回 204，实际: %d", w.Code)
+	}
+	methods := w.Header().Get("Access-Control-Allow-Methods")
+	if methods != "GET, OPTIONS" {
+		t.Errorf("Allow-Methods 应为 'GET, OPTIONS'，实际: %s", methods)
+	}
+}
+
+func TestCORSMiddlewareWhitelist(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(corsMiddleware("https://a.com,https://b.com"))
+	r.GET("/test", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
+
+	// 允许的来源
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/test", nil)
+	req.Header.Set("Origin", "https://a.com")
+	r.ServeHTTP(w, req)
+	if w.Header().Get("Access-Control-Allow-Origin") != "https://a.com" {
+		t.Errorf("白名单中的来源应被允许，实际: %s", w.Header().Get("Access-Control-Allow-Origin"))
+	}
+
+	// 不允许的来源
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest("GET", "/test", nil)
+	req2.Header.Set("Origin", "https://evil.com")
+	r.ServeHTTP(w2, req2)
+	if w2.Header().Get("Access-Control-Allow-Origin") != "" {
+		t.Errorf("不在白名单的来源不应设置 CORS header，实际: %s", w2.Header().Get("Access-Control-Allow-Origin"))
+	}
+}
+
+// containsJSONField 简单检查 JSON 响应是否包含指定字段值
+func containsJSONField(body, field, value string) bool {
+	return strings.Contains(body, `"`+field+`":"`+value+`"`)
+}
