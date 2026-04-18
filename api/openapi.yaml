@@ -1,0 +1,246 @@
+openapi: "3.0.3"
+info:
+  title: parse-video API
+  description: 视频解析服务，支持 20+ 中国社交平台去水印解析
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:8080
+    description: 本地开发
+
+paths:
+  /api/v1/health:
+    get:
+      summary: 健康检查
+      operationId: health
+      responses:
+        "200":
+          description: 服务健康
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  version:
+                    type: string
+                    example: "1.0.0"
+                  platforms:
+                    type: integer
+                    example: 23
+
+  /api/v1/platforms:
+    get:
+      summary: 支持平台列表
+      operationId: platforms
+      responses:
+        "200":
+          description: 平台列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Platform"
+
+  /api/v1/parse:
+    get:
+      summary: 解析分享链接
+      operationId: parseURL
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: 视频分享链接或包含链接的分享文案
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 解析成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: "#/components/schemas/VideoParseInfo"
+        "400":
+          description: 参数错误或平台不支持
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 认证失败（启用 Basic Auth 时）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 解析失败（平台接口异常）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: 请求过于频繁
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: 建议等待秒数
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/parse/{source}/{video_id}:
+    get:
+      summary: 根据视频 ID 解析
+      operationId: parseID
+      parameters:
+        - name: source
+          in: path
+          required: true
+          description: 平台标识
+          schema:
+            type: string
+        - name: video_id
+          in: path
+          required: true
+          description: 视频 ID
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 解析成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: "#/components/schemas/VideoParseInfo"
+        "400":
+          description: 参数错误或平台不支持
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 认证失败（启用 Basic Auth 时）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: 解析失败
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: 请求过于频繁
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: 建议等待秒数
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    VideoParseInfo:
+      type: object
+      properties:
+        author:
+          type: object
+          properties:
+            uid:
+              type: string
+            name:
+              type: string
+            avatar:
+              type: string
+        title:
+          type: string
+        video_url:
+          type: string
+        music_url:
+          type: string
+        cover_url:
+          type: string
+        images:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+              live_photo_url:
+                type: string
+
+    Platform:
+      type: object
+      properties:
+        source:
+          type: string
+        name:
+          type: string
+        url_parse:
+          type: boolean
+        id_parse:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              enum:
+                - MISSING_PARAMETER
+                - UNSUPPORTED_URL
+                - UNSUPPORTED_SOURCE
+                - ID_PARSE_NOT_SUPPORTED
+                - PARSE_FAILED
+                - UNAUTHORIZED
+                - RATE_LIMITED
+                - INTERNAL_ERROR
+            message:
+              type: string
