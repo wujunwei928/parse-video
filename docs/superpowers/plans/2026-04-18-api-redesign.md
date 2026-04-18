@@ -4,7 +4,7 @@
 
 **Goal:** 将 parse-video 的 HTTP API 层升级为 RESTful v1 API，包含语义化状态码、CORS、速率限制、健康检查和平台列表端点，同时保留旧路由向后兼容。
 
-**Architecture:** 在 `cmd/` 包中新增三个文件：`response.go`（响应类型和错误码）、`middleware.go`（Recovery/CORS/限速/日志/认证中间件）、`handlers.go`（v1 处理函数 + 旧路由适配器 + 平台元数据），然后重写 `serve.go` 将所有组件组装起来。parser 包零改动。
+**Architecture:** 在 `cmd/` 包中新增三个文件：`response.go`（响应类型、错误码、错误分类辅助函数）、`middleware.go`（Recovery/CORS/限速/日志/认证中间件）、`handlers.go`（v1 处理函数 + 旧路由适配器 + 平台元数据），然后重写 `serve.go` 将所有组件组装起来。parser 包零改动。
 
 **Tech Stack:** Go 1.24, Gin, Cobra, `golang.org/x/time/rate`（新增）
 
@@ -25,6 +25,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -103,6 +104,17 @@ func TestSendErrorContentType(t *testing.T) {
 		t.Errorf("Content-Type 应为 application/json，实际: %s", ct)
 	}
 }
+
+func TestClassifyParseError(t *testing.T) {
+	// parser 返回的 error 统一归类为 PARSE_FAILED
+	status, code := classifyParseError(fmt.Errorf("任意 parser 错误"))
+	if status != 422 {
+		t.Errorf("状态码应为 422，实际: %d", status)
+	}
+	if code != ErrParseFailed {
+		t.Errorf("错误码应为 PARSE_FAILED，实际: %s", code)
+	}
+}
 ```
 
 - [ ] **Step 2: 运行测试验证失败**
@@ -165,6 +177,12 @@ func sendError(c *gin.Context, httpStatus int, code string, message string) {
 		Error:  apiError{Code: code, Message: message},
 	})
 }
+
+// classifyParseError 将 parser 返回的 error 统一分类为 PARSE_FAILED（422）
+// parser 包返回 error 接口无类型化错误，一律归类为解析失败
+func classifyParseError(err error) (int, string) {
+	return 422, ErrParseFailed
+}
 ```
 
 - [ ] **Step 4: 运行测试验证通过**
@@ -189,14 +207,14 @@ git commit -m "feat(api): 添加 v1 响应类型和错误码定义"
 
 - [ ] **Step 1: 编写 Recovery 和 CORS 测试**
 
-创建 `cmd/middleware_test.go`（先只含 Recovery 和 CORS 部分）：
+创建 `cmd/middleware_test.go`（先只含 Recovery 和 CORS 部分，后续 Task 追加更多测试）：
 
 ```go
 package cmd
 
 import (
-	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -294,16 +312,7 @@ func TestCORSMiddlewareWhitelist(t *testing.T) {
 
 // containsJSONField 简单检查 JSON 响应是否包含指定字段值
 func containsJSONField(body, field, value string) bool {
-	return containsString(body, `"`+field+`":"`+value+`"`)
-}
-
-func containsString(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
+	return strings.Contains(body, `"`+field+`":"`+value+`"`)
 }
 ```
 
@@ -314,23 +323,16 @@ Expected: 编译失败（函数不存在）
 
 - [ ] **Step 3: 实现 Recovery 和 CORS 中间件**
 
-创建 `cmd/middleware.go`：
+创建 `cmd/middleware.go`（Task 2 仅含 Recovery 和 CORS，后续 Task 追加其余中间件）：
 
 ```go
 package cmd
 
 import (
-	"fmt"
-	"log"
-	"net"
 	"net/http"
-	"os"
 	"strings"
-	"sync"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/time/rate"
 )
 
 // recoveryMiddleware 捕获 panic，返回 500 INTERNAL_ERROR
@@ -394,19 +396,15 @@ func originInList(origin string, list []string) bool {
 }
 ```
 
-- [ ] **Step 4: 安装 x/time 依赖**
-
-Run: `cd /code/parse-video/.worktrees/cli-refactor && go get golang.org/x/time/rate`
-
-- [ ] **Step 5: 运行测试验证通过**
+- [ ] **Step 4: 运行测试验证通过**
 
 Run: `cd /code/parse-video/.worktrees/cli-refactor && go test ./cmd/ -run "TestRecoveryMiddleware|TestCORSMiddleware" -v`
 Expected: PASS
 
-- [ ] **Step 6: 提交**
+- [ ] **Step 5: 提交**
 
 ```bash
-git add cmd/middleware.go cmd/middleware_test.go go.mod go.sum
+git add cmd/middleware.go cmd/middleware_test.go
 git commit -m "feat(api): 添加 Recovery 和 CORS 中间件"
 ```
 
@@ -417,10 +415,12 @@ git commit -m "feat(api): 添加 Recovery 和 CORS 中间件"
 **Files:**
 - Modify: `cmd/middleware.go`
 - Modify: `cmd/middleware_test.go`
+- Modify: `go.mod`
+- Modify: `go.sum`
 
 - [ ] **Step 1: 编写速率限制测试**
 
-在 `cmd/middleware_test.go` 末尾追加：
+在 `cmd/middleware_test.go` 末尾追加，同时在文件顶部 import 块中追加 `"time"`：
 
 ```go
 func TestRateLimitMiddleware(t *testing.T) {
@@ -453,9 +453,33 @@ func TestRateLimitMiddleware(t *testing.T) {
 	if !containsJSONField(w2.Body.String(), "code", ErrRateLimited) {
 		t.Errorf("应返回 RATE_LIMITED 错误码，实际: %s", w2.Body.String())
 	}
+	// Retry-After 精确值：60/2=30 秒
 	retryAfter := w2.Header().Get("Retry-After")
-	if retryAfter == "" {
-		t.Error("应设置 Retry-After header")
+	if retryAfter != "30" {
+		t.Errorf("Retry-After 应为 30（60/2），实际: %s", retryAfter)
+	}
+}
+
+func TestRateLimitRetryAfterCalculation(t *testing.T) {
+	// 验证 retryAfterSeconds 对不同 RPM 的计算（四舍五入）
+	tests := []struct {
+		rpm      int
+		expected int
+	}{
+		{60, 1},
+		{30, 2},
+		{120, 1},
+		{2, 30},
+		{29, 2},  // 60/29 ≈ 2.07，四舍五入为 2
+		{45, 1},  // 60/45 ≈ 1.33，四舍五入为 1
+		{80, 1},  // 60/80 = 0.75，四舍五入为 1（最少 1 秒）
+	}
+	for _, tt := range tests {
+		limiter := newIPRateLimiter(tt.rpm)
+		got := limiter.retryAfterSeconds()
+		if got != tt.expected {
+			t.Errorf("rpm=%d: retryAfterSeconds 应为 %d，实际: %d", tt.rpm, tt.expected, got)
+		}
 	}
 }
 
@@ -500,6 +524,62 @@ func TestRateLimitDifferentIPs(t *testing.T) {
 		}
 	}
 }
+
+func TestRateLimitRemoteAddrOnly(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	limiter := newIPRateLimiter(1)
+	r := gin.New()
+	r.Use(rateLimitMiddleware(limiter, "/api/v1/health"))
+	r.GET("/api/v1/parse", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
+
+	// 同一 RemoteAddr，设置不同 X-Forwarded-For（应被忽略）
+	w1 := httptest.NewRecorder()
+	req1 := httptest.NewRequest("GET", "/api/v1/parse", nil)
+	req1.RemoteAddr = "1.2.3.4:1234"
+	req1.Header.Set("X-Forwarded-For", "9.9.9.9")
+	r.ServeHTTP(w1, req1)
+	if w1.Code != 200 {
+		t.Errorf("第一次请求应成功，实际: %d", w1.Code)
+	}
+
+	// 第二次请求：不同 X-Forwarded-For，相同 RemoteAddr → 应被限速
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest("GET", "/api/v1/parse", nil)
+	req2.RemoteAddr = "1.2.3.4:1234"
+	req2.Header.Set("X-Forwarded-For", "8.8.8.8")
+	r.ServeHTTP(w2, req2)
+	if w2.Code != 429 {
+		t.Errorf("相同 RemoteAddr 应被限速（忽略 X-Forwarded-For），实际: %d", w2.Code)
+	}
+}
+
+func TestRateLimitCleanupOnce(t *testing.T) {
+	limiter := newIPRateLimiter(60)
+
+	// 添加两个条目
+	limiter.getLimiter("1.1.1.1")
+	limiter.getLimiter("2.2.2.2")
+
+	// 手动设置一个条目为"过期"（31 分钟前）
+	if v, ok := limiter.visitors.Load("1.1.1.1"); ok {
+		entry := v.(*visitorEntry)
+		entry.lastSeen = time.Now().Add(-31 * time.Minute)
+	}
+
+	// 清理：阈值 30 分钟前
+	limiter.cleanupOnce(time.Now().Add(-30 * time.Minute))
+
+	// 过期条目应被删除
+	if _, ok := limiter.visitors.Load("1.1.1.1"); ok {
+		t.Error("过期条目应被清理")
+	}
+	// 近期条目应保留
+	if _, ok := limiter.visitors.Load("2.2.2.2"); !ok {
+		t.Error("近期条目不应被清理")
+	}
+}
 ```
 
 - [ ] **Step 2: 运行测试验证失败**
@@ -509,7 +589,7 @@ Expected: 编译失败
 
 - [ ] **Step 3: 实现速率限制**
 
-在 `cmd/middleware.go` 末尾追加：
+在 `cmd/middleware.go` 末尾追加（需要在文件顶部的 import 块中追加 `"fmt"`, `"net"`, `"sync"`, `"time"`, `"golang.org/x/time/rate"`）：
 
 ```go
 // ipRateLimiter 基于 IP 的速率限制器
@@ -517,6 +597,7 @@ type ipRateLimiter struct {
 	visitors sync.Map
 	rate     rate.Limit
 	burst    int
+	rpm      int // 保存原始 RPM，用于计算 Retry-After
 }
 
 type visitorEntry struct {
@@ -526,9 +607,15 @@ type visitorEntry struct {
 
 // newIPRateLimiter 创建 IP 速率限制器
 func newIPRateLimiter(rpm int) *ipRateLimiter {
+	return newIPRateLimiterWithBurst(rpm, 1)
+}
+
+// newIPRateLimiterWithBurst 创建指定 burst 的速率限制器（测试用）
+func newIPRateLimiterWithBurst(rpm, burst int) *ipRateLimiter {
 	rl := &ipRateLimiter{
 		rate:  rate.Every(time.Minute / time.Duration(rpm)),
-		burst: 1,
+		burst: burst,
+		rpm:   rpm,
 	}
 	// 后台清理过期条目
 	go rl.cleanup()
@@ -553,20 +640,24 @@ func (l *ipRateLimiter) getLimiter(ip string) *rate.Limiter {
 func (l *ipRateLimiter) cleanup() {
 	for {
 		time.Sleep(10 * time.Minute)
-		threshold := time.Now().Add(-30 * time.Minute)
-		l.visitors.Range(func(key, value any) bool {
-			entry := value.(*visitorEntry)
-			if entry.lastSeen.Before(threshold) {
-				l.visitors.Delete(key)
-			}
-			return true
-		})
+		l.cleanupOnce(time.Now().Add(-30 * time.Minute))
 	}
 }
 
+// cleanupOnce 清理超过阈值的过期条目（可独立测试）
+func (l *ipRateLimiter) cleanupOnce(threshold time.Time) {
+	l.visitors.Range(func(key, value any) bool {
+		entry := value.(*visitorEntry)
+		if entry.lastSeen.Before(threshold) {
+			l.visitors.Delete(key)
+		}
+		return true
+	})
+}
+
 func (l *ipRateLimiter) retryAfterSeconds() int {
-	// 等待时间 = 60 / rpm，最少 1 秒
-	s := int(60.0 / float64(l.rate))
+	// 等待时间 = 60 / rpm，四舍五入到整秒，最少 1 秒
+	s := int(float64(60) / float64(l.rpm) + 0.5)
 	if s < 1 {
 		s = 1
 	}
@@ -574,6 +665,7 @@ func (l *ipRateLimiter) retryAfterSeconds() int {
 }
 
 // rateLimitMiddleware 基于 IP 的速率限制
+// 仅读取 RemoteAddr（不含端口的 IP 部分），不读取 X-Forwarded-For 等可伪造 header
 func rateLimitMiddleware(limiter *ipRateLimiter, exemptPath string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 豁免路径
@@ -598,15 +690,19 @@ func rateLimitMiddleware(limiter *ipRateLimiter, exemptPath string) gin.HandlerF
 }
 ```
 
-- [ ] **Step 4: 运行测试验证通过**
+- [ ] **Step 4: 安装 x/time 依赖**
+
+Run: `cd /code/parse-video/.worktrees/cli-refactor && go get golang.org/x/time/rate`
+
+- [ ] **Step 5: 运行测试验证通过**
 
 Run: `cd /code/parse-video/.worktrees/cli-refactor && go test ./cmd/ -run "TestRateLimit" -v`
 Expected: PASS
 
-- [ ] **Step 5: 提交**
+- [ ] **Step 6: 提交**
 
 ```bash
-git add cmd/middleware.go cmd/middleware_test.go
+git add cmd/middleware.go cmd/middleware_test.go go.mod go.sum
 git commit -m "feat(api): 添加基于 IP 的速率限制中间件"
 ```
 
@@ -620,13 +716,14 @@ git commit -m "feat(api): 添加基于 IP 的速率限制中间件"
 
 - [ ] **Step 1: 编写日志和认证测试**
 
-在 `cmd/middleware_test.go` 末尾追加：
+在 `cmd/middleware_test.go` 末尾追加，同时在文件顶部 import 块中追加 `"bytes"`（Task 2 未包含）：
 
 ```go
 func TestRequestLogMiddleware(t *testing.T) {
 	gin.SetMode(gin.TestMode)
+	var buf bytes.Buffer
 	r := gin.New()
-	r.Use(requestLogMiddleware())
+	r.Use(requestLogMiddlewareWithWriter(&buf))
 	r.GET("/test", func(c *gin.Context) {
 		c.String(200, "ok")
 	})
@@ -638,7 +735,16 @@ func TestRequestLogMiddleware(t *testing.T) {
 	if w.Code != 200 {
 		t.Errorf("请求应成功，实际: %d", w.Code)
 	}
-	// 日志中间件不影响响应内容，只验证请求正常通过
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "GET") {
+		t.Errorf("日志应包含请求方法 GET，实际: %s", logOutput)
+	}
+	if !strings.Contains(logOutput, "/test") {
+		t.Errorf("日志应包含请求路径 /test，实际: %s", logOutput)
+	}
+	if !strings.Contains(logOutput, "200") {
+		t.Errorf("日志应包含状态码 200，实际: %s", logOutput)
+	}
 }
 
 func TestBasicAuthMiddleware(t *testing.T) {
@@ -659,6 +765,12 @@ func TestBasicAuthMiddleware(t *testing.T) {
 	r.ServeHTTP(w1, req1)
 	if w1.Code != 401 {
 		t.Errorf("无凭证应返回 401，实际: %d", w1.Code)
+	}
+	if !containsJSONField(w1.Body.String(), "code", ErrUnauthorized) {
+		t.Errorf("401 应返回 UNAUTHORIZED 错误码，实际: %s", w1.Body.String())
+	}
+	if w1.Header().Get("WWW-Authenticate") == "" {
+		t.Error("401 应设置 WWW-Authenticate header")
 	}
 
 	// 豁免路由无需认证
@@ -685,6 +797,9 @@ func TestBasicAuthMiddleware(t *testing.T) {
 	r.ServeHTTP(w4, req4)
 	if w4.Code != 401 {
 		t.Errorf("错误凭证应返回 401，实际: %d", w4.Code)
+	}
+	if !containsJSONField(w4.Body.String(), "code", ErrUnauthorized) {
+		t.Errorf("错误凭证 401 应返回 UNAUTHORIZED 错误码，实际: %s", w4.Body.String())
 	}
 }
 
@@ -714,12 +829,17 @@ Expected: 编译失败
 
 - [ ] **Step 3: 实现请求日志和 Basic Auth**
 
-在 `cmd/middleware.go` 末尾追加：
+在 `cmd/middleware.go` 末尾追加，同时在文件顶部的 import 块中追加 `"io"`, `"log"` 和 `"os"`：
 
 ```go
-// requestLogMiddleware 结构化请求日志
+// requestLogMiddleware 结构化请求日志（输出到 stderr）
 func requestLogMiddleware() gin.HandlerFunc {
-	logger := log.New(os.Stderr, "", log.LstdFlags)
+	return requestLogMiddlewareWithWriter(os.Stderr)
+}
+
+// requestLogMiddlewareWithWriter 可指定输出目标的日志中间件（测试用）
+func requestLogMiddlewareWithWriter(w io.Writer) gin.HandlerFunc {
+	logger := log.New(w, "", log.LstdFlags)
 	return func(c *gin.Context) {
 		start := time.Now()
 		c.Next()
@@ -778,7 +898,7 @@ git commit -m "feat(api): 添加请求日志和 Basic Auth 中间件"
 
 ---
 
-### Task 5: v1 处理函数 — 健康检查和平台列表（handlers.go）
+### Task 5: v1 处理函数和旧路由适配器（handlers.go）
 
 **Files:**
 - Create: `cmd/handlers.go`
@@ -877,12 +997,18 @@ Expected: 编译失败
 package cmd
 
 import (
+	"net/url"
 	"sort"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/wujunwei928/parse-video/parser"
 	"github.com/wujunwei928/parse-video/utils"
+)
+
+var (
+	parseVideoShareURL = parser.ParseVideoShareUrlByRegexp
+	parseVideoID       = parser.ParseVideoId
 )
 
 // platformNames 平台显示名称映射（按 source 字母序）
@@ -972,9 +1098,10 @@ func v1ParseURLHandler(c *gin.Context) {
 		return
 	}
 
-	info, err := parser.ParseVideoShareUrlByRegexp(url)
+	info, err := parseVideoShareURL(url)
 	if err != nil {
-		sendError(c, 422, ErrParseFailed, err.Error())
+		status, code := classifyParseError(err)
+		sendError(c, status, code, err.Error())
 		return
 	}
 	sendSuccess(c, info)
@@ -995,19 +1122,26 @@ func v1ParseIDHandler(c *gin.Context) {
 		return
 	}
 
-	parseInfo, err := parser.ParseVideoId(source, videoID)
+	parseInfo, err := parseVideoID(source, videoID)
 	if err != nil {
-		sendError(c, 422, ErrParseFailed, err.Error())
+		status, code := classifyParseError(err)
+		sendError(c, status, code, err.Error())
 		return
 	}
 	sendSuccess(c, parseInfo)
 }
 
-// matchPlatform 检查 URL 是否匹配已知平台域名
-func matchPlatform(url string) bool {
+// matchPlatform 检查 URL 的 host 是否匹配已知平台域名
+func matchPlatform(rawURL string) bool {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	host := strings.ToLower(parsed.Hostname())
 	for _, sourceInfo := range parser.VideoSourceInfoMapping {
 		for _, domain := range sourceInfo.VideoShareUrlDomain {
-			if strings.Contains(url, domain) {
+			domain = strings.ToLower(domain)
+			if host == domain || strings.HasSuffix(host, "."+domain) {
 				return true
 			}
 		}
@@ -1111,6 +1245,32 @@ func TestV1ParseURLHandlerUnknownDomain(t *testing.T) {
 	}
 }
 
+func TestV1ParseURLHandlerDomainMismatch(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	// 域名包含但不等于平台域名（如 notbilibili.com ≠ bilibili.com）
+	c.Request = httptest.NewRequest("GET", "/api/v1/parse?url=https://notbilibili.com/video/123", nil)
+
+	v1ParseURLHandler(c)
+
+	if w.Code != 400 {
+		t.Errorf("域名不精确匹配应返回 400，实际: %d", w.Code)
+	}
+	if !containsJSONField(w.Body.String(), "code", ErrUnsupportedURL) {
+		t.Errorf("应返回 UNSUPPORTED_URL，实际: %s", w.Body.String())
+	}
+}
+
+func TestMatchPlatformSubdomainHost(t *testing.T) {
+	if !matchPlatform("https://www.bilibili.com/video/BV1xx411c7mD") {
+		t.Error("www.bilibili.com 应匹配 bilibili.com 域名配置")
+	}
+	if matchPlatform("https://notbilibili.com/video/123") {
+		t.Error("notbilibili.com 不应被识别为 bilibili 平台")
+	}
+}
+
 func TestV1ParseIDHandlerUnknownSource(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
@@ -1183,9 +1343,14 @@ git commit -m "test(api): 添加 v1 解析和旧路由适配器测试"
 
 **Files:**
 - Modify: `cmd/serve.go`
-- Modify: `cmd/cmd_test.go`（可能需要调整）
 
-- [ ] **Step 1: 重写 serve.go**
+- [ ] **Step 1: 检查现有 cmd/cmd_test.go 是否依赖旧 serve.go 的 httpResponse 类型**
+
+Run: `cd /code/parse-video/.worktrees/cli-refactor && grep -n 'httpResponse\|httpResp' cmd/cmd_test.go || echo "无依赖"`
+
+如果输出 "无依赖"，跳到 Step 2。如果有匹配行，需要将相关测试中的 `httpResponse` 引用更新为新类型或移除。
+
+- [ ] **Step 2: 重写 serve.go**
 
 将 `cmd/serve.go` 完整替换为：
 
@@ -1308,7 +1473,7 @@ func getEnvInt(key string, defaultVal int) int {
 		return defaultVal
 	}
 	n, err := strconv.Atoi(v)
-	if err != nil {
+	if err != nil || n <= 0 {
 		return defaultVal
 	}
 	return n
@@ -1319,17 +1484,17 @@ func init() {
 }
 ```
 
-- [ ] **Step 2: 验证编译**
+- [ ] **Step 3: 验证编译**
 
 Run: `cd /code/parse-video/.worktrees/cli-refactor && go build ./...`
 Expected: 编译成功
 
-- [ ] **Step 3: 运行已有测试确认不破坏**
+- [ ] **Step 4: 运行已有测试确认不破坏**
 
 Run: `cd /code/parse-video/.worktrees/cli-refactor && go test ./cmd/ -v -timeout 60s`
 Expected: PASS
 
-- [ ] **Step 4: 提交**
+- [ ] **Step 5: 提交**
 
 ```bash
 git add cmd/serve.go
@@ -1352,18 +1517,40 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/wujunwei928/parse-video/parser"
 )
 
-// setupTestRouter 创建完整配置的测试路由
+func stubParserFuncs(t *testing.T,
+	share func(string) (*parser.VideoParseInfo, error),
+	id func(string, string) (*parser.VideoParseInfo, error),
+) {
+	oldShare := parseVideoShareURL
+	oldID := parseVideoID
+	t.Cleanup(func() {
+		parseVideoShareURL = oldShare
+		parseVideoID = oldID
+	})
+	if share != nil {
+		parseVideoShareURL = share
+	}
+	if id != nil {
+		parseVideoID = id
+	}
+}
+
+// setupTestRouter 创建完整配置的测试路由（含完整中间件栈）
 func setupTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 	r.Use(recoveryMiddleware())
 	r.Use(corsMiddleware("*"))
+	r.Use(requestLogMiddleware())
+	r.Use(rateLimitMiddleware(newIPRateLimiterWithBurst(600, 100), "/api/v1/health")) // 测试用高限速+高 burst，不干扰测试
 
 	v1 := r.Group("/api/v1")
 	{
@@ -1375,6 +1562,35 @@ func setupTestRouter() *gin.Engine {
 
 	r.GET("/video/share/url/parse", legacyParseURLHandler)
 	r.GET("/video/id/parse", legacyParseIDHandler)
+	r.GET("/", func(c *gin.Context) { c.String(200, "web ui") })
+	return r
+}
+
+// setupTestRouterWithAuth 创建带认证的测试路由
+func setupTestRouterWithAuth() *gin.Engine {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(recoveryMiddleware())
+	r.Use(corsMiddleware("*"))
+	r.Use(requestLogMiddleware())
+	r.Use(rateLimitMiddleware(newIPRateLimiterWithBurst(600, 100), "/api/v1/health"))
+	r.Use(basicAuthMiddleware("testuser", "testpass", map[string]bool{
+		"/api/v1/health":    true,
+		"/api/v1/platforms": true,
+		"/":                 true,
+	}))
+
+	v1 := r.Group("/api/v1")
+	{
+		v1.GET("/health", healthHandler)
+		v1.GET("/platforms", platformsHandler)
+		v1.GET("/parse", v1ParseURLHandler)
+		v1.GET("/parse/:source/:video_id", v1ParseIDHandler)
+	}
+
+	r.GET("/video/share/url/parse", legacyParseURLHandler)
+	r.GET("/video/id/parse", legacyParseIDHandler)
+	r.GET("/", func(c *gin.Context) { c.String(200, "web ui") })
 	return r
 }
 
@@ -1474,6 +1690,124 @@ func TestIntegrationV1ParseIDNoIDParse(t *testing.T) {
 	}
 }
 
+func TestIntegrationV1ParseURLSuccess(t *testing.T) {
+	stubParserFuncs(t, func(string) (*parser.VideoParseInfo, error) {
+		info := &parser.VideoParseInfo{}
+		info.Title = "测试视频"
+		info.VideoUrl = "https://example.com/video.mp4"
+		return info, nil
+	}, nil)
+	r := setupTestRouter()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/parse?url=https://v.douyin.com/test/", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != 200 {
+		t.Fatalf("v1 URL 解析成功应返回 200，实际: %d", w.Code)
+	}
+	var resp map[string]any
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	if resp["status"] != "success" {
+		t.Errorf("status 应为 success，实际: %v", resp["status"])
+	}
+	data := resp["data"].(map[string]any)
+	if data["title"] != "测试视频" {
+		t.Errorf("data.title 应为 '测试视频'，实际: %v", data["title"])
+	}
+	// 验证 VideoParseInfo 所有字段始终存在
+	for _, key := range []string{"author", "title", "video_url", "music_url", "cover_url", "images"} {
+		if _, ok := data[key]; !ok {
+			t.Errorf("data 缺少必需字段: %s", key)
+		}
+	}
+	// 验证 author 嵌套字段
+	author := data["author"].(map[string]any)
+	for _, key := range []string{"uid", "name", "avatar"} {
+		if _, ok := author[key]; !ok {
+			t.Errorf("author 缺少必需字段: %s", key)
+		}
+	}
+}
+
+func TestIntegrationV1ParseIDSuccess(t *testing.T) {
+	stubParserFuncs(t, nil, func(string, string) (*parser.VideoParseInfo, error) {
+		info := &parser.VideoParseInfo{}
+		info.Title = "ID解析视频"
+		return info, nil
+	})
+	r := setupTestRouter()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/parse/douyin/123", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != 200 {
+		t.Fatalf("v1 ID 解析成功应返回 200，实际: %d", w.Code)
+	}
+	var resp map[string]any
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	if resp["status"] != "success" {
+		t.Errorf("status 应为 success，实际: %v", resp["status"])
+	}
+	data := resp["data"].(map[string]any)
+	if data["title"] != "ID解析视频" {
+		t.Errorf("data.title 应为 'ID解析视频'，实际: %v", data["title"])
+	}
+	for _, key := range []string{"author", "title", "video_url", "music_url", "cover_url", "images"} {
+		if _, ok := data[key]; !ok {
+			t.Errorf("data 缺少必需字段: %s", key)
+		}
+	}
+	// 验证 author 嵌套字段
+	author := data["author"].(map[string]any)
+	for _, key := range []string{"uid", "name", "avatar"} {
+		if _, ok := author[key]; !ok {
+			t.Errorf("author 缺少必需字段: %s", key)
+		}
+	}
+}
+
+func TestIntegrationV1ParseURL422OnParseFailure(t *testing.T) {
+	stubParserFuncs(t, func(string) (*parser.VideoParseInfo, error) {
+		return nil, fmt.Errorf("upstream parse failed")
+	}, nil)
+	r := setupTestRouter()
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/parse?url=https://v.douyin.com/test/", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != 422 {
+		t.Errorf("解析失败应返回 422，实际: %d", w.Code)
+	}
+	var resp map[string]any
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	errObj := resp["error"].(map[string]any)
+	if errObj["code"] != "PARSE_FAILED" {
+		t.Errorf("422 错误码应为 PARSE_FAILED，实际: %v", errObj["code"])
+	}
+}
+
+func TestIntegrationV1ParseID422OnParseFailure(t *testing.T) {
+	stubParserFuncs(t, nil, func(string, string) (*parser.VideoParseInfo, error) {
+		return nil, fmt.Errorf("upstream parse failed")
+	})
+	r := setupTestRouter()
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/parse/douyin/123", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != 422 {
+		t.Errorf("解析失败应返回 422，实际: %d", w.Code)
+	}
+	var resp map[string]any
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	errObj := resp["error"].(map[string]any)
+	if errObj["code"] != "PARSE_FAILED" {
+		t.Errorf("422 错误码应为 PARSE_FAILED，实际: %v", errObj["code"])
+	}
+}
+
 func TestIntegrationLegacyRouteFormat(t *testing.T) {
 	r := setupTestRouter()
 
@@ -1504,6 +1838,127 @@ func TestIntegrationCORSHeaders(t *testing.T) {
 
 	if w.Code != 204 {
 		t.Errorf("OPTIONS 应返回 204，实际: %d", w.Code)
+	}
+}
+
+func TestIntegrationNotFound(t *testing.T) {
+	r := setupTestRouter()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/nonexistent", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != 404 {
+		t.Errorf("不存在的路由应返回 404，实际: %d", w.Code)
+	}
+}
+
+func TestIntegrationV1ParseIDMissingPathParam(t *testing.T) {
+	r := setupTestRouter()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/parse/douyin", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != 404 {
+		t.Errorf("缺少 video_id 的路由应返回 404，实际: %d", w.Code)
+	}
+}
+
+func TestIntegrationLegacyIDParse(t *testing.T) {
+	r := setupTestRouter()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/video/id/parse?source=unknown&video_id=123", nil)
+	r.ServeHTTP(w, req)
+
+	// 旧路由始终 200
+	if w.Code != 200 {
+		t.Errorf("旧路由应始终 200，实际: %d", w.Code)
+	}
+	var resp map[string]any
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	if resp["code"] != float64(201) {
+		t.Errorf("解析失败 code 应为 201，实际: %v", resp["code"])
+	}
+}
+
+// === 认证覆盖测试 ===
+
+func TestIntegrationAuthProtectsV1Parse(t *testing.T) {
+	r := setupTestRouterWithAuth()
+
+	// 无凭证访问受保护路由 → 401
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/parse?url=test", nil)
+	r.ServeHTTP(w, req)
+	if w.Code != 401 {
+		t.Errorf("无凭证访问 /api/v1/parse 应返回 401，实际: %d", w.Code)
+	}
+
+	// 正确凭证 → 通过认证（可能 400 因为 URL 无效，但不应该是 401）
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest("GET", "/api/v1/parse?url=test", nil)
+	req2.SetBasicAuth("testuser", "testpass")
+	r.ServeHTTP(w2, req2)
+	if w2.Code == 401 {
+		t.Error("正确凭证不应返回 401")
+	}
+}
+
+func TestIntegrationAuthExemptPlatforms(t *testing.T) {
+	r := setupTestRouterWithAuth()
+
+	// /api/v1/platforms 无需认证
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/platforms", nil)
+	r.ServeHTTP(w, req)
+	if w.Code != 200 {
+		t.Errorf("/platforms 应无需认证返回 200，实际: %d", w.Code)
+	}
+}
+
+func TestIntegrationAuthExemptHealth(t *testing.T) {
+	r := setupTestRouterWithAuth()
+
+	// /api/v1/health 无需认证
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/health", nil)
+	r.ServeHTTP(w, req)
+	if w.Code != 200 {
+		t.Errorf("/health 应无需认证返回 200，实际: %d", w.Code)
+	}
+}
+
+func TestIntegrationAuthExemptWebUI(t *testing.T) {
+	r := setupTestRouterWithAuth()
+
+	// GET /（Web UI）无需认证
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/", nil)
+	r.ServeHTTP(w, req)
+	if w.Code != 200 {
+		t.Errorf("/ 应无需认证返回 200，实际: %d", w.Code)
+	}
+}
+
+func TestIntegrationAuthProtectsLegacyRoutes(t *testing.T) {
+	r := setupTestRouterWithAuth()
+
+	// 旧路由 /video/share/url/parse 也受认证保护
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/video/share/url/parse?url=test", nil)
+	r.ServeHTTP(w, req)
+	if w.Code != 401 {
+		t.Errorf("无凭证访问旧路由应返回 401，实际: %d", w.Code)
+	}
+
+	// 旧路由 /video/id/parse 也受认证保护
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest("GET", "/video/id/parse?source=test&video_id=123", nil)
+	r.ServeHTTP(w2, req2)
+	if w2.Code != 401 {
+		t.Errorf("无凭证访问旧路由 /video/id/parse 应返回 401，实际: %d", w2.Code)
 	}
 }
 ```
@@ -1624,8 +2079,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 认证失败（启用 Basic Auth 时）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "422":
           description: 解析失败（平台接口异常）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: 请求过于频繁
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: 建议等待秒数
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 服务器内部错误
           content:
             application/json:
               schema:
@@ -1667,8 +2145,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 认证失败（启用 Basic Auth 时）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "422":
           description: 解析失败
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: 请求过于频繁
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: 建议等待秒数
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 服务器内部错误
           content:
             application/json:
               schema:
