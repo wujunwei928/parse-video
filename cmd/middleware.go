@@ -1,10 +1,15 @@
 package cmd
 
 import (
+	"fmt"
+	"net"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/time/rate"
 )
 
 // recoveryMiddleware 捕获 panic，返回 500 INTERNAL_ERROR
@@ -65,4 +70,91 @@ func originInList(origin string, list []string) bool {
 		}
 	}
 	return false
+}
+
+// ipRateLimiter 基于 IP 的速率限制器
+type ipRateLimiter struct {
+	visitors sync.Map
+	rate     rate.Limit
+	burst    int
+	rpm      int
+}
+
+type visitorEntry struct {
+	limiter  *rate.Limiter
+	lastSeen time.Time
+}
+
+func newIPRateLimiter(rpm int) *ipRateLimiter {
+	return newIPRateLimiterWithBurst(rpm, 1)
+}
+
+func newIPRateLimiterWithBurst(rpm, burst int) *ipRateLimiter {
+	rl := &ipRateLimiter{
+		rate:  rate.Every(time.Minute / time.Duration(rpm)),
+		burst: burst,
+		rpm:   rpm,
+	}
+	go rl.cleanup()
+	return rl
+}
+
+func (l *ipRateLimiter) getLimiter(ip string) *rate.Limiter {
+	now := time.Now()
+	if v, ok := l.visitors.Load(ip); ok {
+		entry := v.(*visitorEntry)
+		entry.lastSeen = now
+		return entry.limiter
+	}
+	entry := &visitorEntry{
+		limiter:  rate.NewLimiter(l.rate, l.burst),
+		lastSeen: now,
+	}
+	l.visitors.Store(ip, entry)
+	return entry.limiter
+}
+
+func (l *ipRateLimiter) cleanup() {
+	for {
+		time.Sleep(10 * time.Minute)
+		l.cleanupOnce(time.Now().Add(-30 * time.Minute))
+	}
+}
+
+func (l *ipRateLimiter) cleanupOnce(threshold time.Time) {
+	l.visitors.Range(func(key, value any) bool {
+		entry := value.(*visitorEntry)
+		if entry.lastSeen.Before(threshold) {
+			l.visitors.Delete(key)
+		}
+		return true
+	})
+}
+
+func (l *ipRateLimiter) retryAfterSeconds() int {
+	s := int(float64(60)/float64(l.rpm) + 0.5)
+	if s < 1 {
+		s = 1
+	}
+	return s
+}
+
+func rateLimitMiddleware(limiter *ipRateLimiter, exemptPath string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Request.URL.Path == exemptPath {
+			c.Next()
+			return
+		}
+		ip, _, err := net.SplitHostPort(c.Request.RemoteAddr)
+		if err != nil {
+			ip = c.Request.RemoteAddr
+		}
+		if !limiter.getLimiter(ip).Allow() {
+			c.Header("Retry-After", fmt.Sprintf("%d", limiter.retryAfterSeconds()))
+			sendError(c, http.StatusTooManyRequests, ErrRateLimited, "请求过于频繁，请稍后再试")
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
 }

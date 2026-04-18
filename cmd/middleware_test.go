@@ -4,6 +4,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -101,4 +102,141 @@ func TestCORSMiddlewareWhitelist(t *testing.T) {
 // containsJSONField 简单检查 JSON 响应是否包含指定字段值
 func containsJSONField(body, field, value string) bool {
 	return strings.Contains(body, `"`+field+`":"`+value+`"`)
+}
+
+func TestRateLimitMiddleware(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	limiter := newIPRateLimiter(2)
+	r := gin.New()
+	r.Use(rateLimitMiddleware(limiter, "/api/v1/health"))
+	r.GET("/api/v1/parse", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
+
+	w1 := httptest.NewRecorder()
+	req1 := httptest.NewRequest("GET", "/api/v1/parse", nil)
+	req1.RemoteAddr = "1.2.3.4:1234"
+	r.ServeHTTP(w1, req1)
+	if w1.Code != 200 {
+		t.Errorf("第一次请求应成功，实际: %d", w1.Code)
+	}
+
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest("GET", "/api/v1/parse", nil)
+	req2.RemoteAddr = "1.2.3.4:1234"
+	r.ServeHTTP(w2, req2)
+	if w2.Code != 429 {
+		t.Errorf("超限应返回 429，实际: %d", w2.Code)
+	}
+	if !containsJSONField(w2.Body.String(), "code", ErrRateLimited) {
+		t.Errorf("应返回 RATE_LIMITED 错误码，实际: %s", w2.Body.String())
+	}
+	retryAfter := w2.Header().Get("Retry-After")
+	if retryAfter != "30" {
+		t.Errorf("Retry-After 应为 30（60/2），实际: %s", retryAfter)
+	}
+}
+
+func TestRateLimitRetryAfterCalculation(t *testing.T) {
+	tests := []struct {
+		rpm      int
+		expected int
+	}{
+		{60, 1},
+		{30, 2},
+		{120, 1},
+		{2, 30},
+		{29, 2},
+		{45, 1},
+		{80, 1},
+	}
+	for _, tt := range tests {
+		limiter := newIPRateLimiter(tt.rpm)
+		got := limiter.retryAfterSeconds()
+		if got != tt.expected {
+			t.Errorf("rpm=%d: retryAfterSeconds 应为 %d，实际: %d", tt.rpm, tt.expected, got)
+		}
+	}
+}
+
+func TestRateLimitExemptHealth(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	limiter := newIPRateLimiter(1)
+	r := gin.New()
+	r.Use(rateLimitMiddleware(limiter, "/api/v1/health"))
+	r.GET("/api/v1/health", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
+	for i := 0; i < 3; i++ {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/api/v1/health", nil)
+		req.RemoteAddr = "1.2.3.4:1234"
+		r.ServeHTTP(w, req)
+		if w.Code != 200 {
+			t.Errorf("health 端点第 %d 次请求应成功（不限速），实际: %d", i+1, w.Code)
+		}
+	}
+}
+
+func TestRateLimitDifferentIPs(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	limiter := newIPRateLimiter(1)
+	r := gin.New()
+	r.Use(rateLimitMiddleware(limiter, "/api/v1/health"))
+	r.GET("/api/v1/parse", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
+	for _, ip := range []string{"1.1.1.1:1111", "2.2.2.2:2222"} {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/api/v1/parse", nil)
+		req.RemoteAddr = ip
+		r.ServeHTTP(w, req)
+		if w.Code != 200 {
+			t.Errorf("不同 IP 应独立限速，%s 应成功，实际: %d", ip, w.Code)
+		}
+	}
+}
+
+func TestRateLimitRemoteAddrOnly(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	limiter := newIPRateLimiter(1)
+	r := gin.New()
+	r.Use(rateLimitMiddleware(limiter, "/api/v1/health"))
+	r.GET("/api/v1/parse", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
+	w1 := httptest.NewRecorder()
+	req1 := httptest.NewRequest("GET", "/api/v1/parse", nil)
+	req1.RemoteAddr = "1.2.3.4:1234"
+	req1.Header.Set("X-Forwarded-For", "9.9.9.9")
+	r.ServeHTTP(w1, req1)
+	if w1.Code != 200 {
+		t.Errorf("第一次请求应成功，实际: %d", w1.Code)
+	}
+
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest("GET", "/api/v1/parse", nil)
+	req2.RemoteAddr = "1.2.3.4:1234"
+	req2.Header.Set("X-Forwarded-For", "8.8.8.8")
+	r.ServeHTTP(w2, req2)
+	if w2.Code != 429 {
+		t.Errorf("相同 RemoteAddr 应被限速（忽略 X-Forwarded-For），实际: %d", w2.Code)
+	}
+}
+
+func TestRateLimitCleanupOnce(t *testing.T) {
+	limiter := newIPRateLimiter(60)
+	limiter.getLimiter("1.1.1.1")
+	limiter.getLimiter("2.2.2.2")
+	if v, ok := limiter.visitors.Load("1.1.1.1"); ok {
+		entry := v.(*visitorEntry)
+		entry.lastSeen = time.Now().Add(-31 * time.Minute)
+	}
+	limiter.cleanupOnce(time.Now().Add(-30 * time.Minute))
+	if _, ok := limiter.visitors.Load("1.1.1.1"); ok {
+		t.Error("过期条目应被清理")
+	}
+	if _, ok := limiter.visitors.Load("2.2.2.2"); !ok {
+		t.Error("近期条目不应被清理")
+	}
 }
