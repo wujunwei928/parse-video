@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/spf13/cobra"
 	"github.com/wujunwei928/parse-video/parser"
@@ -53,7 +54,7 @@ var parseCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(parseCmd)
 	parseCmd.Flags().StringP("file", "f", "", "从文件读取链接（每行一个，- 代表 stdin）")
-	parseCmd.Flags().String("format", "text", "输出格式: json, table, text")
+	parseCmd.Flags().String("format", FormatText, "输出格式: json, table, text")
 }
 
 func readInputsFromFile(filePath string) ([]string, error) {
@@ -83,21 +84,32 @@ func readInputsFromFile(filePath string) ([]string, error) {
 }
 
 func runBatchParse(inputs []string, format string) error {
-	items := make([]batchResult, 0, len(inputs))
-	failCount := 0
-	for _, input := range inputs {
-		info, err := parser.ParseVideoShareUrlByRegexp(input)
-		if err != nil {
-			items = append(items, batchResult{Input: input, Failed: true, ErrMsg: err.Error()})
-			failCount++
-		} else {
-			items = append(items, batchResult{Input: input, Failed: false, Data: info})
-		}
+	items := make([]batchResult, len(inputs))
+	var wg sync.WaitGroup
+	for i, input := range inputs {
+		wg.Add(1)
+		go func(idx int, in string) {
+			defer wg.Done()
+			info, err := parser.ParseVideoShareUrlByRegexp(in)
+			if err != nil {
+				items[idx] = batchResult{Input: in, Failed: true, ErrMsg: err.Error()}
+			} else {
+				items[idx] = batchResult{Input: in, Failed: false, Data: info}
+			}
+		}(i, input)
 	}
+	wg.Wait()
+
 	if err := outputBatch(os.Stdout, format, items); err != nil {
 		return err
 	}
-	if len(inputs) > 0 && failCount == len(inputs) {
+	failCount := 0
+	for _, item := range items {
+		if item.Failed {
+			failCount++
+		}
+	}
+	if failCount == len(inputs) {
 		return fmt.Errorf("所有 %d 条解析均失败", len(inputs))
 	}
 	return nil

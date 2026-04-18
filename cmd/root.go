@@ -8,10 +8,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Version 版本号，通过 ldflags 注入
 var Version = "dev"
 
-// templateFS 模板文件系统，由 main.go 通过 SetTemplates 注入
 var templateFS fs.FS
 
 var rootCmd = &cobra.Command{

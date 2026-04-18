@@ -17,9 +17,9 @@ import (
 )
 
 type httpResponse struct {
-	Code int         `json:"code"`
-	Msg  string      `json:"msg"`
-	Data interface{} `json:"data"`
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+	Data any    `json:"data"`
 }
 
 var serveCmd = &cobra.Command{
@@ -34,9 +34,11 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 	r := gin.Default()
 
-	if os.Getenv("PARSE_VIDEO_USERNAME") != "" && os.Getenv("PARSE_VIDEO_PASSWORD") != "" {
+	username := os.Getenv("PARSE_VIDEO_USERNAME")
+	password := os.Getenv("PARSE_VIDEO_PASSWORD")
+	if username != "" && password != "" {
 		r.Use(gin.BasicAuth(gin.Accounts{
-			os.Getenv("PARSE_VIDEO_USERNAME"): os.Getenv("PARSE_VIDEO_PASSWORD"),
+			username: password,
 		}))
 	}
 
@@ -53,26 +55,13 @@ func runServe(cmd *cobra.Command, args []string) error {
 		})
 	}
 
-	r.GET("/video/share/url/parse", func(c *gin.Context) {
-		paramUrl := c.Query("url")
-		parseRes, err := parser.ParseVideoShareUrlByRegexp(paramUrl)
-		jsonRes := httpResponse{Code: 200, Msg: "解析成功", Data: parseRes}
-		if err != nil {
-			jsonRes = httpResponse{Code: 201, Msg: err.Error()}
-		}
-		c.JSON(http.StatusOK, jsonRes)
-	})
+	r.GET("/video/share/url/parse", makeParseHandler(func(c *gin.Context) (any, error) {
+		return parser.ParseVideoShareUrlByRegexp(c.Query("url"))
+	}))
 
-	r.GET("/video/id/parse", func(c *gin.Context) {
-		videoId := c.Query("video_id")
-		source := c.Query("source")
-		parseRes, err := parser.ParseVideoId(source, videoId)
-		jsonRes := httpResponse{Code: 200, Msg: "解析成功", Data: parseRes}
-		if err != nil {
-			jsonRes = httpResponse{Code: 201, Msg: err.Error()}
-		}
-		c.JSON(200, jsonRes)
-	})
+	r.GET("/video/id/parse", makeParseHandler(func(c *gin.Context) (any, error) {
+		return parser.ParseVideoId(c.Query("source"), c.Query("video_id"))
+	}))
 
 	srv := &http.Server{Addr: addr, Handler: r}
 	log.Printf("服务启动，监听端口 %s", addr)
@@ -102,6 +91,17 @@ func runServe(cmd *cobra.Command, args []string) error {
 	}
 	log.Println("Server exiting")
 	return nil
+}
+
+func makeParseHandler(parseFunc func(c *gin.Context) (any, error)) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		parseRes, err := parseFunc(c)
+		if err != nil {
+			c.JSON(http.StatusOK, httpResponse{Code: 201, Msg: err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, httpResponse{Code: 200, Msg: "解析成功", Data: parseRes})
+	}
 }
 
 func init() {

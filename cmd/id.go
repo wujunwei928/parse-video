@@ -55,6 +55,6 @@ var idCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(idCmd)
 	idCmd.Flags().StringP("source", "s", "", "视频来源平台（必填）")
-	idCmd.Flags().String("format", "text", "输出格式: json, table, text")
+	idCmd.Flags().String("format", FormatText, "输出格式: json, table, text")
 	_ = idCmd.MarkFlagRequired("source")
 }

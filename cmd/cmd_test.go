@@ -162,7 +162,7 @@ func TestFormatText(t *testing.T) {
 	info.MusicUrl = "https://example.com/music.mp3"
 
 	out := &bytes.Buffer{}
-	formatText(out, info)
+	formatTextOutput(out, info)
 
 	result := out.String()
 	if !strings.Contains(result, "标题: 测试视频") {
@@ -187,7 +187,7 @@ func TestFormatTextWithImages(t *testing.T) {
 	}
 
 	out := &bytes.Buffer{}
-	formatText(out, info)
+	formatTextOutput(out, info)
 
 	result := out.String()
 	if !strings.Contains(result, "图片列表") {
@@ -209,7 +209,7 @@ func TestFormatJSON(t *testing.T) {
 	info.VideoUrl = "https://example.com/video.mp4"
 
 	out := &bytes.Buffer{}
-	err := formatJSON(out, info)
+	err := formatJSONOutput(out, info)
 	if err != nil {
 		t.Fatalf("formatJSON 失败: %v", err)
 	}

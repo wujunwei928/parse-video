@@ -9,6 +9,12 @@ import (
 	"github.com/wujunwei928/parse-video/parser"
 )
 
+const (
+	FormatText  = "text"
+	FormatJSON  = "json"
+	FormatTable = "table"
+)
+
 type batchResult struct {
 	Input  string                 `json:"input"`
 	Failed bool                   `json:"-"`
@@ -42,14 +48,14 @@ func (r batchResult) statusText() string {
 
 func validateFormat(format string) error {
 	switch format {
-	case "text", "json", "table":
+	case FormatText, FormatJSON, FormatTable:
 		return nil
 	default:
 		return fmt.Errorf("不支持的输出格式: %s，可选值: json, table, text", format)
 	}
 }
 
-func formatText(w io.Writer, info *parser.VideoParseInfo) {
+func formatTextOutput(w io.Writer, info *parser.VideoParseInfo) {
 	fmt.Fprintf(w, "标题: %s\n", info.Title)
 	fmt.Fprintf(w, "作者: %s (UID: %s)\n", info.Author.Name, info.Author.Uid)
 	if info.VideoUrl != "" {
@@ -75,7 +81,7 @@ func formatText(w io.Writer, info *parser.VideoParseInfo) {
 	}
 }
 
-func formatJSON(w io.Writer, info *parser.VideoParseInfo) error {
+func formatJSONOutput(w io.Writer, info *parser.VideoParseInfo) error {
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	return enc.Encode(info)
@@ -119,23 +125,23 @@ func truncate(s string, maxLen int) string {
 
 func outputResult(w io.Writer, format string, input string, info *parser.VideoParseInfo) error {
 	switch format {
-	case "json":
-		return formatJSON(w, info)
-	case "table":
+	case FormatJSON:
+		return formatJSONOutput(w, info)
+	case FormatTable:
 		items := []batchResult{{Input: input, Failed: false, Data: info}}
 		formatTable(w, items)
 		return nil
 	default:
-		formatText(w, info)
+		formatTextOutput(w, info)
 		return nil
 	}
 }
 
 func outputBatch(w io.Writer, format string, items []batchResult) error {
 	switch format {
-	case "json":
+	case FormatJSON:
 		return formatJSONBatch(w, items)
-	case "table":
+	case FormatTable:
 		formatTable(w, items)
 		return nil
 	default:
@@ -144,7 +150,7 @@ func outputBatch(w io.Writer, format string, items []batchResult) error {
 				fmt.Fprintln(w)
 			}
 			if item.Data != nil {
-				formatText(w, item.Data)
+				formatTextOutput(w, item.Data)
 			} else {
 				fmt.Fprintf(w, "[失败] %s\n错误: %s\n", item.Input, item.ErrMsg)
 			}
