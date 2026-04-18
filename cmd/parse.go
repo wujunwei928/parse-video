@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 
 	"github.com/spf13/cobra"
 	"github.com/wujunwei928/parse-video/parser"
 )
+
+const defaultBatchParseConcurrency = 8
 
 var parseCmd = &cobra.Command{
 	Use:   "parse [url...]",
@@ -97,11 +100,14 @@ func readInputsFromFile(filePath string) ([]string, error) {
 
 func runBatchParse(cmd *cobra.Command, inputs []string, format string) error {
 	items := make([]batchResult, len(inputs))
+	sem := make(chan struct{}, batchParseConcurrencyLimit())
 	var wg sync.WaitGroup
 	for i, input := range inputs {
 		wg.Add(1)
 		go func(idx int, in string) {
 			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
 			info, err := parser.ParseVideoShareUrlByRegexp(in)
 			if err != nil {
 				items[idx] = batchResult{Input: in, Failed: true, ErrMsg: err.Error()}
@@ -138,4 +144,15 @@ func runBatchParse(cmd *cobra.Command, inputs []string, format string) error {
 		return fmt.Errorf("所有 %d 条解析均失败", len(inputs))
 	}
 	return nil
+}
+
+func batchParseConcurrencyLimit() int {
+	limit := runtime.GOMAXPROCS(0)
+	if limit <= 0 {
+		limit = 1
+	}
+	if limit > defaultBatchParseConcurrency {
+		limit = defaultBatchParseConcurrency
+	}
+	return limit
 }
