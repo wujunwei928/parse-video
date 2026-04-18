@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -287,17 +286,8 @@ func TestValidateFormat(t *testing.T) {
 	}
 }
 
-func TestBatchParseConcurrencyLimit(t *testing.T) {
-	limit := batchParseConcurrencyLimit()
-	if limit < 1 {
-		t.Fatalf("并发限制应至少为 1，实际: %d", limit)
-	}
-
-	maxExpected := runtime.GOMAXPROCS(0)
-	if maxExpected > defaultBatchParseConcurrency {
-		maxExpected = defaultBatchParseConcurrency
-	}
-	if limit > maxExpected {
-		t.Fatalf("并发限制不应超过 %d，实际: %d", maxExpected, limit)
+func TestBatchParseConcurrencyConstant(t *testing.T) {
+	if defaultBatchParseConcurrency < 1 {
+		t.Fatalf("并发限制应至少为 1，实际: %d", defaultBatchParseConcurrency)
 	}
 }
