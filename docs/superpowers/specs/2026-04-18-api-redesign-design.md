@@ -44,14 +44,15 @@
 
 **`/api/v1/parse?url=<share_url>`**：
 - `url` 参数缺失 → 400 `MISSING_PARAMETER`
-- `url` 中无法识别平台 → 400 `UNSUPPORTED_URL`
+- `url` 中无法提取有效链接（正则不匹配）→ 400 `UNSUPPORTED_URL`
+- `url` 中提取到链接但无法识别对应平台（域名不在映射表中）→ 400 `UNSUPPORTED_URL`
 - 解析成功 → 200 + 解析数据
 - 平台接口异常 → 422 `PARSE_FAILED`
 
 **`/api/v1/parse/<source>/<video_id>`**：
 - `source` 不在合法列表 → 400 `UNSUPPORTED_SOURCE`
 - `source` 不支持 ID 解析（如 kuaishou、redbook）→ 400 `ID_PARSE_NOT_SUPPORTED`
-- `video_id` 为空 → 400 `MISSING_PARAMETER`
+- 路径参数缺失（Gin 路由不匹配）→ 404（由 Gin 默认处理，非 v1 错误格式）
 - 解析成功 → 200 + 解析数据
 - 平台接口异常 → 422 `PARSE_FAILED`
 - `source` 或 `video_id` 含特殊字符 → URL 已由 Gin 路由解码，无需额外处理
@@ -134,8 +135,8 @@
 | 场景 | HTTP 状态码 | error.code |
 |------|------------|-----------|
 | 解析成功 | 200 | - |
-| URL/source/video_id 参数缺失 | 400 | `MISSING_PARAMETER` |
-| 链接无法识别平台 | 400 | `UNSUPPORTED_URL` |
+| URL 参数缺失 | 400 | `MISSING_PARAMETER` |
+| 链接无法提取或无法识别平台 | 400 | `UNSUPPORTED_URL` |
 | source 不在合法列表 | 400 | `UNSUPPORTED_SOURCE` |
 | source 不支持 ID 解析 | 400 | `ID_PARSE_NOT_SUPPORTED` |
 | 解析失败（平台接口异常） | 422 | `PARSE_FAILED` |
@@ -162,7 +163,11 @@ const (
 
 `parser` 包返回 `error` 接口，无类型化错误。API 层采用**两层分类**：
 
-1. **预验证层**（调用 `parser` 之前）：参数非空检查、source 合法性检查、ID 解析支持检查，各自返回对应的 400 错误码
+1. **预验证层**（调用 `parser` 之前）：
+   - 参数非空检查 → `MISSING_PARAMETER`
+   - source 合法性检查 → `UNSUPPORTED_SOURCE`
+   - ID 解析支持检查 → `ID_PARSE_NOT_SUPPORTED`
+   - URL 提取预验证（调用 `utils.RegexpMatchUrlFromString` 提取 URL，再遍历 `parser.VideoSourceInfoMapping` 匹配域名）→ `UNSUPPORTED_URL`
 2. **统一兜底层**：`parser` 返回的 `error` 一律归类为 `PARSE_FAILED`（422），不尝试解析 `error.Error()` 内容
 3. **panic 兜底**：`parser` panic 由 recovery 中间件捕获，归类为 `INTERNAL_ERROR`（500）
 
@@ -217,6 +222,7 @@ GET /api/v1/platforms
 - **认证覆盖范围**（启用时）：
   - **需要认证**：`/api/v1/parse`、`/api/v1/parse/<source>/<id>`、旧路由 `/video/share/url/parse`、`/video/id/parse`
   - **无需认证**：`/api/v1/health`（方便负载均衡器探活）、`/api/v1/platforms`（公开信息）、`GET /`（Web UI 页面本身）
+- **Web UI 兼容**：Web UI 通过浏览器 XHR 调用旧路由。当 Basic Auth 启用时，浏览器会弹出认证对话框（HTTP Basic Auth 标准行为），用户输入凭证后浏览器自动附加 `Authorization` header，无需修改 Web UI 代码。这与现有行为一致。
 
 ### 请求日志中间件
 
