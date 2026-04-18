@@ -218,11 +218,20 @@ GET /api/v1/platforms
 
 ### Basic Auth 中间件
 
-- 保留现有逻辑：`PARSE_VIDEO_USERNAME` 和 `PARSE_VIDEO_PASSWORD` 环境变量启用
+- 使用自定义实现（非 Gin 内置 `gin.BasicAuth`），确保 v1 路由的 401 响应遵循 `{status: "error", error: {code: "UNAUTHORIZED", message: "..."}}` 格式
+- `PARSE_VIDEO_USERNAME` 和 `PARSE_VIDEO_PASSWORD` 环境变量启用
 - **认证覆盖范围**（启用时）：
   - **需要认证**：`/api/v1/parse`、`/api/v1/parse/<source>/<id>`、旧路由 `/video/share/url/parse`、`/video/id/parse`
   - **无需认证**：`/api/v1/health`（方便负载均衡器探活）、`/api/v1/platforms`（公开信息）、`GET /`（Web UI 页面本身）
 - **Web UI 兼容**：Web UI 通过浏览器 XHR 调用旧路由。当 Basic Auth 启用时，浏览器会弹出认证对话框（HTTP Basic Auth 标准行为），用户输入凭证后浏览器自动附加 `Authorization` header，无需修改 Web UI 代码。这与现有行为一致。
+
+### 中间件对旧路由的影响
+
+旧路由保证 `{code, msg, data}` 格式**仅适用于解析业务逻辑层面**。中间件层产生的错误（认证 401、限速 429、panic 500）使用各自的标准 HTTP 响应格式，不遵循旧路由的 `{code, msg, data}` 信封。这是可接受的：
+
+- **401**：浏览器拦截并弹出认证对话框，Web UI 代码不直接处理此响应
+- **429**：自部署场景下单用户几乎不会触发限速
+- **500**：Recovery 兜底，正常情况下不应出现
 
 ### 请求日志中间件
 
