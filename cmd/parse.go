@@ -45,9 +45,19 @@ var parseCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("解析失败: %w", err)
 			}
-			return outputResult(os.Stdout, format, info)
+			if err := outputResult(os.Stdout, format, info); err != nil {
+				return err
+			}
+			download, _ := cmd.Flags().GetBool("download")
+			if download {
+				outputDir, _ := cmd.Flags().GetString("output-dir")
+				if err := downloadMedia(info, outputDir); err != nil {
+					return err
+				}
+			}
+			return nil
 		}
-		return runBatchParse(inputs, format)
+		return runBatchParse(cmd, inputs, format)
 	},
 }
 
@@ -55,6 +65,8 @@ func init() {
 	rootCmd.AddCommand(parseCmd)
 	parseCmd.Flags().StringP("file", "f", "", "从文件读取链接（每行一个，- 代表 stdin）")
 	parseCmd.Flags().String("format", FormatText, "输出格式: json, text")
+	parseCmd.Flags().BoolP("download", "d", false, "下载解析到的媒体文件")
+	parseCmd.Flags().StringP("output-dir", "o", ".", "下载文件保存目录")
 }
 
 func readInputsFromFile(filePath string) ([]string, error) {
@@ -83,7 +95,7 @@ func readInputsFromFile(filePath string) ([]string, error) {
 	return inputs, nil
 }
 
-func runBatchParse(inputs []string, format string) error {
+func runBatchParse(cmd *cobra.Command, inputs []string, format string) error {
 	items := make([]batchResult, len(inputs))
 	var wg sync.WaitGroup
 	for i, input := range inputs {
@@ -103,6 +115,19 @@ func runBatchParse(inputs []string, format string) error {
 	if err := outputBatch(os.Stdout, format, items); err != nil {
 		return err
 	}
+
+	download, _ := cmd.Flags().GetBool("download")
+	if download {
+		outputDir, _ := cmd.Flags().GetString("output-dir")
+		for _, item := range items {
+			if !item.Failed && item.Data != nil {
+				if err := downloadMedia(item.Data, outputDir); err != nil {
+					fmt.Fprintf(os.Stderr, "下载失败 [%s]: %v\n", item.Input, err)
+				}
+			}
+		}
+	}
+
 	failCount := 0
 	for _, item := range items {
 		if item.Failed {

@@ -48,7 +48,17 @@ var idCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("解析失败: %w", err)
 		}
-		return outputResult(os.Stdout, format, info)
+		if err := outputResult(os.Stdout, format, info); err != nil {
+			return err
+		}
+		download, _ := cmd.Flags().GetBool("download")
+		if download {
+			outputDir, _ := cmd.Flags().GetString("output-dir")
+			if err := downloadMedia(info, outputDir); err != nil {
+				return err
+			}
+		}
+		return nil
 	},
 }
 
@@ -56,5 +66,7 @@ func init() {
 	rootCmd.AddCommand(idCmd)
 	idCmd.Flags().StringP("source", "s", "", "视频来源平台（必填）")
 	idCmd.Flags().String("format", FormatText, "输出格式: json, text")
+	idCmd.Flags().BoolP("download", "d", false, "下载解析到的媒体文件")
+	idCmd.Flags().StringP("output-dir", "o", ".", "下载文件保存目录")
 	_ = idCmd.MarkFlagRequired("source")
 }
