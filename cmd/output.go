@@ -84,6 +84,7 @@ func formatTextOutput(w io.Writer, info *parser.VideoParseInfo) {
 func formatJSONOutput(w io.Writer, info *parser.VideoParseInfo) error {
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
 	return enc.Encode(info)
 }
 
