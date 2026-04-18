@@ -2,8 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"io"
+	"log"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -152,6 +155,49 @@ func rateLimitMiddleware(limiter *ipRateLimiter, exemptPath string) gin.HandlerF
 		if !limiter.getLimiter(ip).Allow() {
 			c.Header("Retry-After", fmt.Sprintf("%d", limiter.retryAfterSeconds()))
 			sendError(c, http.StatusTooManyRequests, ErrRateLimited, "请求过于频繁，请稍后再试")
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
+// requestLogMiddleware 结构化请求日志（输出到 stderr）
+func requestLogMiddleware() gin.HandlerFunc {
+	return requestLogMiddlewareWithWriter(os.Stderr)
+}
+
+// requestLogMiddlewareWithWriter 可指定输出目标的日志中间件（测试用）
+func requestLogMiddlewareWithWriter(w io.Writer) gin.HandlerFunc {
+	logger := log.New(w, "", log.LstdFlags)
+	return func(c *gin.Context) {
+		start := time.Now()
+		c.Next()
+		logger.Printf("%s %s %d %s",
+			c.Request.Method,
+			c.Request.URL.Path,
+			c.Writer.Status(),
+			time.Since(start).Round(time.Microsecond),
+		)
+	}
+}
+
+// basicAuthMiddleware 自定义 Basic Auth，返回 v1 错误格式
+func basicAuthMiddleware(username, password string, exemptPaths map[string]bool) gin.HandlerFunc {
+	if username == "" || password == "" {
+		return func(c *gin.Context) { c.Next() }
+	}
+
+	return func(c *gin.Context) {
+		if exemptPaths[c.Request.URL.Path] {
+			c.Next()
+			return
+		}
+
+		user, pass, hasAuth := c.Request.BasicAuth()
+		if !hasAuth || user != username || pass != password {
+			c.Header("WWW-Authenticate", `Basic realm="parse-video"`)
+			sendError(c, http.StatusUnauthorized, ErrUnauthorized, "认证失败")
 			c.Abort()
 			return
 		}

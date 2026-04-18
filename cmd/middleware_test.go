@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -238,5 +239,106 @@ func TestRateLimitCleanupOnce(t *testing.T) {
 	}
 	if _, ok := limiter.visitors.Load("2.2.2.2"); !ok {
 		t.Error("近期条目不应被清理")
+	}
+}
+
+func TestRequestLogMiddleware(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	var buf bytes.Buffer
+	r := gin.New()
+	r.Use(requestLogMiddlewareWithWriter(&buf))
+	r.GET("/test", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/test", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != 200 {
+		t.Errorf("请求应成功，实际: %d", w.Code)
+	}
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, "GET") {
+		t.Errorf("日志应包含请求方法 GET，实际: %s", logOutput)
+	}
+	if !strings.Contains(logOutput, "/test") {
+		t.Errorf("日志应包含请求路径 /test，实际: %s", logOutput)
+	}
+	if !strings.Contains(logOutput, "200") {
+		t.Errorf("日志应包含状态码 200，实际: %s", logOutput)
+	}
+}
+
+func TestBasicAuthMiddleware(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(basicAuthMiddleware("testuser", "testpass",
+		map[string]bool{"/api/v1/health": true, "/api/v1/platforms": true, "/": true}))
+	r.GET("/api/v1/parse", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
+	r.GET("/api/v1/health", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
+
+	// 无凭证
+	w1 := httptest.NewRecorder()
+	req1 := httptest.NewRequest("GET", "/api/v1/parse", nil)
+	r.ServeHTTP(w1, req1)
+	if w1.Code != 401 {
+		t.Errorf("无凭证应返回 401，实际: %d", w1.Code)
+	}
+	if !containsJSONField(w1.Body.String(), "code", ErrUnauthorized) {
+		t.Errorf("401 应返回 UNAUTHORIZED 错误码，实际: %s", w1.Body.String())
+	}
+	if w1.Header().Get("WWW-Authenticate") == "" {
+		t.Error("401 应设置 WWW-Authenticate header")
+	}
+
+	// 豁免路由
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest("GET", "/api/v1/health", nil)
+	r.ServeHTTP(w2, req2)
+	if w2.Code != 200 {
+		t.Errorf("health 端点应无需认证，实际: %d", w2.Code)
+	}
+
+	// 正确凭证
+	w3 := httptest.NewRecorder()
+	req3 := httptest.NewRequest("GET", "/api/v1/parse", nil)
+	req3.SetBasicAuth("testuser", "testpass")
+	r.ServeHTTP(w3, req3)
+	if w3.Code != 200 {
+		t.Errorf("正确凭证应返回 200，实际: %d", w3.Code)
+	}
+
+	// 错误凭证
+	w4 := httptest.NewRecorder()
+	req4 := httptest.NewRequest("GET", "/api/v1/parse", nil)
+	req4.SetBasicAuth("testuser", "wrongpass")
+	r.ServeHTTP(w4, req4)
+	if w4.Code != 401 {
+		t.Errorf("错误凭证应返回 401，实际: %d", w4.Code)
+	}
+	if !containsJSONField(w4.Body.String(), "code", ErrUnauthorized) {
+		t.Errorf("错误凭证 401 应返回 UNAUTHORIZED 错误码，实际: %s", w4.Body.String())
+	}
+}
+
+func TestBasicAuthMiddlewareDisabled(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(basicAuthMiddleware("", "",
+		map[string]bool{"/api/v1/health": true}))
+	r.GET("/api/v1/parse", func(c *gin.Context) {
+		c.String(200, "ok")
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/parse", nil)
+	r.ServeHTTP(w, req)
+	if w.Code != 200 {
+		t.Errorf("未启用认证时应直接放行，实际: %d", w.Code)
 	}
 }
