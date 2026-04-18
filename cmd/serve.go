@@ -8,19 +8,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
-
-	"github.com/wujunwei928/parse-video/parser"
 )
-
-type httpResponse struct {
-	Code int    `json:"code"`
-	Msg  string `json:"msg"`
-	Data any    `json:"data"`
-}
 
 var serveCmd = &cobra.Command{
 	Use:   "serve",
@@ -32,16 +25,28 @@ func runServe(cmd *cobra.Command, args []string) error {
 	port, _ := cmd.Flags().GetString("port")
 	addr := ":" + port
 
-	r := gin.Default()
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
 
+	// 中间件栈：Recovery → CORS → 日志 → 速率限制 → Basic Auth
+	rateLimitRPM := getEnvInt("RATE_LIMIT_RPM", 60)
+	corsOrigins := getEnvDefault("CORS_ORIGINS", "*")
 	username := os.Getenv("PARSE_VIDEO_USERNAME")
 	password := os.Getenv("PARSE_VIDEO_PASSWORD")
-	if username != "" && password != "" {
-		r.Use(gin.BasicAuth(gin.Accounts{
-			username: password,
-		}))
+
+	exemptPaths := map[string]bool{
+		"/api/v1/health":    true,
+		"/api/v1/platforms": true,
+		"/":                 true,
 	}
 
+	r.Use(recoveryMiddleware())
+	r.Use(corsMiddleware(corsOrigins))
+	r.Use(requestLogMiddleware())
+	r.Use(rateLimitMiddleware(newIPRateLimiter(rateLimitRPM), "/api/v1/health"))
+	r.Use(basicAuthMiddleware(username, password, exemptPaths))
+
+	// Web UI
 	if templateFS != nil {
 		tmpl, err := template.ParseFS(templateFS, "*.html")
 		if err != nil {
@@ -55,13 +60,18 @@ func runServe(cmd *cobra.Command, args []string) error {
 		})
 	}
 
-	r.GET("/video/share/url/parse", makeParseHandler(func(c *gin.Context) (any, error) {
-		return parser.ParseVideoShareUrlByRegexp(c.Query("url"))
-	}))
+	// v1 API 路由
+	v1 := r.Group("/api/v1")
+	{
+		v1.GET("/health", healthHandler)
+		v1.GET("/platforms", platformsHandler)
+		v1.GET("/parse", v1ParseURLHandler)
+		v1.GET("/parse/:source/:video_id", v1ParseIDHandler)
+	}
 
-	r.GET("/video/id/parse", makeParseHandler(func(c *gin.Context) (any, error) {
-		return parser.ParseVideoId(c.Query("source"), c.Query("video_id"))
-	}))
+	// 旧路由（向后兼容）
+	r.GET("/video/share/url/parse", legacyParseURLHandler)
+	r.GET("/video/id/parse", legacyParseIDHandler)
 
 	srv := &http.Server{Addr: addr, Handler: r}
 	log.Printf("服务启动，监听端口 %s", addr)
@@ -93,15 +103,23 @@ func runServe(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func makeParseHandler(parseFunc func(c *gin.Context) (any, error)) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		parseRes, err := parseFunc(c)
-		if err != nil {
-			c.JSON(http.StatusOK, httpResponse{Code: 201, Msg: err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, httpResponse{Code: 200, Msg: "解析成功", Data: parseRes})
+func getEnvDefault(key, defaultVal string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
 	}
+	return defaultVal
+}
+
+func getEnvInt(key string, defaultVal int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return defaultVal
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n <= 0 {
+		return defaultVal
+	}
+	return n
 }
 
 func init() {
