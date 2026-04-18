@@ -10,8 +10,11 @@ This is a Go-based video parsing service that removes watermarks from videos acr
 
 ### Building and Running
 ```bash
-# Run the web server locally
+# Run the web server locally (default port 8080)
 go run main.go
+
+# Run with custom port
+go run main.go -port 9090
 
 # Run with basic auth (requires both environment variables)
 export PARSE_VIDEO_USERNAME=your_username
@@ -39,8 +42,11 @@ go test -v ./...
 # Build Docker image
 docker build -t parse-video .
 
-# Run container
+# Run container (default port 8080)
 docker run -d -p 8080:8080 parse-video
+
+# Run with custom port
+docker run -d -p 9090:9090 parse-video -port 9090
 
 # Run with basic auth
 docker run -d -p 8080:8080 -e PARSE_VIDEO_USERNAME=user -e PARSE_VIDEO_PASSWORD=pass parse-video

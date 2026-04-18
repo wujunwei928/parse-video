@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"flag"
 	"html/template"
 	"io/fs"
 	"log"
@@ -30,6 +31,12 @@ func main() {
 }
 
 func startHTTPServer() {
+	// 支持通过 -port flag 自定义端口号，默认 8080
+	port := flag.String("port", "8080", "服务监听端口")
+	flag.Parse()
+
+	addr := ":" + *port
+
 	r := gin.Default()
 
 	// 根据相关环境变量，确定是否需要使用basic auth中间件验证用户
@@ -90,9 +97,11 @@ func startHTTPServer() {
 	})
 
 	srv := &http.Server{
-		Addr:    ":8080",
+		Addr:    addr,
 		Handler: r,
 	}
+
+	log.Printf("服务启动，监听端口 %s", addr)
 
 	go func() {
 		// 服务连接

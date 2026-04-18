@@ -81,7 +81,11 @@ fmt.Printf("%#v", res2)
 
 # 本地运行
 ```bash
+# 默认监听 8080 端口
 go run main.go
+
+# 自定义端口
+go run main.go -port 9090
 ```
 
 开启basic auth认证, 设置 PARSE_VIDEO_USERNAME， PARSE_VIDEO_PASSWORD 环境变量，不设置不开启，默认不开启
@@ -101,6 +105,11 @@ docker pull wujunwei928/parse-video
 运行 docker 容器, 端口 8080
 ```bash
 docker run -d -p 8080:8080 wujunwei928/parse-video
+```
+
+自定义端口运行
+```bash
+docker run -d -p 9090:9090 wujunwei928/parse-video -port 9090
 ```
 
 运行docker容器，开启basic auth认证
