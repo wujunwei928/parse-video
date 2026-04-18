@@ -1,5 +1,6 @@
    * [支持平台](#支持平台)
    * [安装](#安装)
+   * [命令行使用](#命令行使用)
    * [Docker](#docker)
    * [依赖模块](#依赖模块)
 
@@ -79,21 +80,98 @@ res2, _ := parser.ParseVideoId(parser.SourceDouYin, "视频id")
 fmt.Printf("%#v", res2)
 ```
 
-# 本地运行
+# 命令行使用
+
+编译安装后，可通过 `parse-video` 命令使用，开发阶段可用 `go run main.go` 代替。
+
+## 子命令
+
+### `serve` - 启动 HTTP 解析服务（默认命令）
+
 ```bash
 # 默认监听 8080 端口
 go run main.go
 
 # 自定义端口
-go run main.go -port 9090
-```
+go run main.go serve --port 9090
 
-开启basic auth认证, 设置 PARSE_VIDEO_USERNAME， PARSE_VIDEO_PASSWORD 环境变量，不设置不开启，默认不开启
-```bash
+# 开启 basic auth 认证
 export PARSE_VIDEO_USERNAME=basic_auth_username
 export PARSE_VIDEO_PASSWORD=basic_auth_password
-go run main.go
+go run main.go serve
 ```
+
+> 不带子命令时默认执行 `serve`，`--port` / `--version` 等全局选项可直接使用。
+
+### `parse` - 解析视频分享链接
+
+```bash
+# 解析单个链接
+go run main.go parse "https://v.douyin.com/xxxxx"
+
+# 也可直接传入包含链接的分享文案
+go run main.go parse "7.87 Pjm:/ 复制打开抖音 https://v.douyin.com/xxxxx"
+
+# 批量解析（传入多个链接）
+go run main.go parse "链接1" "链接2" "链接3"
+
+# 从文件读取链接（每行一个）
+go run main.go parse --file links.txt
+
+# 从标准输入读取
+echo "https://v.douyin.com/xxxxx" | go run main.go parse -f -
+
+# JSON 格式输出
+go run main.go parse --format json "分享链接"
+
+# 解析并下载媒体文件到当前目录
+go run main.go parse --download "分享链接"
+
+# 下载到指定目录
+go run main.go parse -d -o ./downloads "分享链接"
+```
+
+### `id` - 根据视频 ID 解析
+
+```bash
+# 通过平台 + 视频 ID 解析
+go run main.go id --source douyin "视频ID"
+
+# JSON 格式输出
+go run main.go id --source douyin --format json "视频ID"
+
+# 解析并下载
+go run main.go id --source douyin -d "视频ID"
+```
+
+> `--source` 为必填参数，可用值可通过解析失败时的错误提示查看。
+
+### `version` - 查看版本
+
+```bash
+go run main.go version
+```
+
+## 全局选项
+
+| 选项 | 说明 |
+|------|------|
+| `--port, -p` | 服务监听端口（默认 `8080`，serve 命令） |
+| `--version` | 显示版本信息 |
+
+## 解析命令通用选项（parse / id）
+
+| 选项 | 说明 |
+|------|------|
+| `--format` | 输出格式：`text`（默认）、`json` |
+| `--download, -d` | 下载解析到的媒体文件（视频、图集、封面、音乐） |
+| `--output-dir, -o` | 下载文件保存目录（默认 `.`，即当前目录） |
+
+## parse 独有选项
+
+| 选项 | 说明 |
+|------|------|
+| `--file, -f` | 从文件读取链接（每行一个，`-` 代表 stdin） |
 
 
 # Docker
