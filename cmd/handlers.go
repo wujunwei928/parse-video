@@ -15,6 +15,14 @@ var (
 	parseVideoID       = parser.ParseVideoId
 )
 
+func sendLegacyResponse(c *gin.Context, data *parser.VideoParseInfo, err error) {
+	if err != nil {
+		c.JSON(200, gin.H{"code": 201, "msg": err.Error()})
+		return
+	}
+	c.JSON(200, gin.H{"code": 200, "msg": "解析成功", "data": data})
+}
+
 // platformNames 平台显示名称映射（按 source 字母序）
 var platformNames = map[string]string{
 	"acfun":        "AcFun",
@@ -42,7 +50,6 @@ var platformNames = map[string]string{
 	"zuiyou":       "最右",
 }
 
-// platformInfo 平台信息
 type platformInfo struct {
 	Source   string `json:"source"`
 	Name     string `json:"name"`
@@ -50,7 +57,6 @@ type platformInfo struct {
 	IDParse  bool   `json:"id_parse"`
 }
 
-// healthHandler 健康检查
 func healthHandler(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"status":    "ok",
@@ -59,7 +65,6 @@ func healthHandler(c *gin.Context) {
 	})
 }
 
-// platformsHandler 支持平台列表
 func platformsHandler(c *gin.Context) {
 	platforms := make([]platformInfo, 0, len(parser.VideoSourceInfoMapping))
 	for source := range parser.VideoSourceInfoMapping {
@@ -81,7 +86,6 @@ func platformsHandler(c *gin.Context) {
 	sendSuccess(c, platforms)
 }
 
-// v1ParseURLHandler v1 分享链接解析
 func v1ParseURLHandler(c *gin.Context) {
 	rawURL := c.Query("url")
 	if rawURL == "" {
@@ -111,7 +115,6 @@ func v1ParseURLHandler(c *gin.Context) {
 	sendSuccess(c, info)
 }
 
-// v1ParseIDHandler v1 视频 ID 解析
 func v1ParseIDHandler(c *gin.Context) {
 	source := c.Param("source")
 	videoID := c.Param("video_id")
@@ -135,7 +138,6 @@ func v1ParseIDHandler(c *gin.Context) {
 	sendSuccess(c, parseInfo)
 }
 
-// matchPlatform 检查 URL 的 host 是否匹配已知平台域名
 func matchPlatform(rawURL string) bool {
 	parsed, err := url.Parse(rawURL)
 	if err != nil {
@@ -153,25 +155,15 @@ func matchPlatform(rawURL string) bool {
 	return false
 }
 
-// legacyParseURLHandler 旧路由适配器：分享链接解析
 func legacyParseURLHandler(c *gin.Context) {
 	rawURL := c.Query("url")
-	parseRes, err := parser.ParseVideoShareUrlByRegexp(rawURL)
-	if err != nil {
-		c.JSON(200, gin.H{"code": 201, "msg": err.Error()})
-		return
-	}
-	c.JSON(200, gin.H{"code": 200, "msg": "解析成功", "data": parseRes})
+	parseRes, err := parseVideoShareURL(rawURL)
+	sendLegacyResponse(c, parseRes, err)
 }
 
-// legacyParseIDHandler 旧路由适配器：视频 ID 解析
 func legacyParseIDHandler(c *gin.Context) {
 	source := c.Query("source")
 	videoID := c.Query("video_id")
-	parseRes, err := parser.ParseVideoId(source, videoID)
-	if err != nil {
-		c.JSON(200, gin.H{"code": 201, "msg": err.Error()})
-		return
-	}
-	c.JSON(200, gin.H{"code": 200, "msg": "解析成功", "data": parseRes})
+	parseRes, err := parseVideoID(source, videoID)
+	sendLegacyResponse(c, parseRes, err)
 }

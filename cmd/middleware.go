@@ -9,13 +9,13 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
 )
 
-// recoveryMiddleware 捕获 panic，返回 500 INTERNAL_ERROR
 func recoveryMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
@@ -28,7 +28,6 @@ func recoveryMiddleware() gin.HandlerFunc {
 	}
 }
 
-// corsMiddleware 处理跨域请求
 func corsMiddleware(allowedOrigins string) gin.HandlerFunc {
 	origins := parseOrigins(allowedOrigins)
 	allowAll := len(origins) == 1 && origins[0] == "*"
@@ -81,11 +80,12 @@ type ipRateLimiter struct {
 	rate     rate.Limit
 	burst    int
 	rpm      int
+	stop     chan struct{}
 }
 
 type visitorEntry struct {
 	limiter  *rate.Limiter
-	lastSeen time.Time
+	lastSeen atomic.Int64
 }
 
 func newIPRateLimiter(rpm int) *ipRateLimiter {
@@ -97,41 +97,54 @@ func newIPRateLimiterWithBurst(rpm, burst int) *ipRateLimiter {
 		rate:  rate.Every(time.Minute / time.Duration(rpm)),
 		burst: burst,
 		rpm:   rpm,
+		stop:  make(chan struct{}),
 	}
 	go rl.cleanup()
 	return rl
 }
 
 func (l *ipRateLimiter) getLimiter(ip string) *rate.Limiter {
-	now := time.Now()
+	now := time.Now().UnixNano()
 	if v, ok := l.visitors.Load(ip); ok {
 		entry := v.(*visitorEntry)
-		entry.lastSeen = now
+		entry.lastSeen.Store(now)
 		return entry.limiter
 	}
 	entry := &visitorEntry{
-		limiter:  rate.NewLimiter(l.rate, l.burst),
-		lastSeen: now,
+		limiter: rate.NewLimiter(l.rate, l.burst),
 	}
+	entry.lastSeen.Store(now)
 	l.visitors.Store(ip, entry)
 	return entry.limiter
 }
 
 func (l *ipRateLimiter) cleanup() {
+	ticker := time.NewTicker(10 * time.Minute)
+	defer ticker.Stop()
 	for {
-		time.Sleep(10 * time.Minute)
-		l.cleanupOnce(time.Now().Add(-30 * time.Minute))
+		select {
+		case <-ticker.C:
+			l.cleanupOnce(time.Now().Add(-30 * time.Minute))
+		case <-l.stop:
+			return
+		}
 	}
 }
 
 func (l *ipRateLimiter) cleanupOnce(threshold time.Time) {
+	thresholdNano := threshold.UnixNano()
 	l.visitors.Range(func(key, value any) bool {
 		entry := value.(*visitorEntry)
-		if entry.lastSeen.Before(threshold) {
+		if entry.lastSeen.Load() < thresholdNano {
 			l.visitors.Delete(key)
 		}
 		return true
 	})
+}
+
+// Stop 终止清理 goroutine
+func (l *ipRateLimiter) Stop() {
+	close(l.stop)
 }
 
 func (l *ipRateLimiter) retryAfterSeconds() int {
@@ -162,12 +175,10 @@ func rateLimitMiddleware(limiter *ipRateLimiter, exemptPath string) gin.HandlerF
 	}
 }
 
-// requestLogMiddleware 结构化请求日志（输出到 stderr）
 func requestLogMiddleware() gin.HandlerFunc {
 	return requestLogMiddlewareWithWriter(os.Stderr)
 }
 
-// requestLogMiddlewareWithWriter 可指定输出目标的日志中间件（测试用）
 func requestLogMiddlewareWithWriter(w io.Writer) gin.HandlerFunc {
 	logger := log.New(w, "", log.LstdFlags)
 	return func(c *gin.Context) {

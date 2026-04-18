@@ -231,7 +231,7 @@ func TestRateLimitCleanupOnce(t *testing.T) {
 	limiter.getLimiter("2.2.2.2")
 	if v, ok := limiter.visitors.Load("1.1.1.1"); ok {
 		entry := v.(*visitorEntry)
-		entry.lastSeen = time.Now().Add(-31 * time.Minute)
+		entry.lastSeen.Store(time.Now().Add(-31 * time.Minute).UnixNano())
 	}
 	limiter.cleanupOnce(time.Now().Add(-30 * time.Minute))
 	if _, ok := limiter.visitors.Load("1.1.1.1"); ok {

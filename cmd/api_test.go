@@ -10,7 +10,6 @@ import (
 	"github.com/wujunwei928/parse-video/parser"
 )
 
-// stubParserFuncs 替换 parser 函数变量，测试结束后自动恢复
 func stubParserFuncs(t *testing.T,
 	share func(string) (*parser.VideoParseInfo, error),
 	id func(string, string) (*parser.VideoParseInfo, error),
@@ -29,14 +28,23 @@ func stubParserFuncs(t *testing.T,
 	}
 }
 
-// setupTestRouter 创建完整配置的测试路由（含完整中间件栈）
-func setupTestRouter() *gin.Engine {
+func setupTestRouter(t *testing.T, auth bool) *gin.Engine {
+	t.Helper()
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 	r.Use(recoveryMiddleware())
 	r.Use(corsMiddleware("*"))
 	r.Use(requestLogMiddleware())
-	r.Use(rateLimitMiddleware(newIPRateLimiterWithBurst(600, 100), "/api/v1/health"))
+	limiter := newIPRateLimiterWithBurst(600, 100)
+	t.Cleanup(limiter.Stop)
+	r.Use(rateLimitMiddleware(limiter, "/api/v1/health"))
+	if auth {
+		r.Use(basicAuthMiddleware("testuser", "testpass", map[string]bool{
+			"/api/v1/health":    true,
+			"/api/v1/platforms": true,
+			"/":                 true,
+		}))
+	}
 
 	v1 := r.Group("/api/v1")
 	{
@@ -52,36 +60,23 @@ func setupTestRouter() *gin.Engine {
 	return r
 }
 
-// setupTestRouterWithAuth 创建带认证的测试路由
-func setupTestRouterWithAuth() *gin.Engine {
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
-	r.Use(recoveryMiddleware())
-	r.Use(corsMiddleware("*"))
-	r.Use(requestLogMiddleware())
-	r.Use(rateLimitMiddleware(newIPRateLimiterWithBurst(600, 100), "/api/v1/health"))
-	r.Use(basicAuthMiddleware("testuser", "testpass", map[string]bool{
-		"/api/v1/health":    true,
-		"/api/v1/platforms": true,
-		"/":                 true,
-	}))
-
-	v1 := r.Group("/api/v1")
-	{
-		v1.GET("/health", healthHandler)
-		v1.GET("/platforms", platformsHandler)
-		v1.GET("/parse", v1ParseURLHandler)
-		v1.GET("/parse/:source/:video_id", v1ParseIDHandler)
+func assertVideoParseInfoFields(t *testing.T, data map[string]any) {
+	t.Helper()
+	for _, key := range []string{"author", "title", "video_url", "music_url", "cover_url", "images"} {
+		if _, ok := data[key]; !ok {
+			t.Errorf("data 缺少必需字段: %s", key)
+		}
 	}
-
-	r.GET("/video/share/url/parse", legacyParseURLHandler)
-	r.GET("/video/id/parse", legacyParseIDHandler)
-	r.GET("/", func(c *gin.Context) { c.String(200, "web ui") })
-	return r
+	author := data["author"].(map[string]any)
+	for _, key := range []string{"uid", "name", "avatar"} {
+		if _, ok := author[key]; !ok {
+			t.Errorf("author 缺少必需字段: %s", key)
+		}
+	}
 }
 
 func TestIntegrationHealthEndpoint(t *testing.T) {
-	r := setupTestRouter()
+	r := setupTestRouter(t, false)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/health", nil)
@@ -99,7 +94,7 @@ func TestIntegrationHealthEndpoint(t *testing.T) {
 }
 
 func TestIntegrationPlatformsEndpoint(t *testing.T) {
-	r := setupTestRouter()
+	r := setupTestRouter(t, false)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/platforms", nil)
@@ -111,7 +106,7 @@ func TestIntegrationPlatformsEndpoint(t *testing.T) {
 }
 
 func TestIntegrationV1ParseMissingURL(t *testing.T) {
-	r := setupTestRouter()
+	r := setupTestRouter(t, false)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/parse", nil)
@@ -123,7 +118,7 @@ func TestIntegrationV1ParseMissingURL(t *testing.T) {
 }
 
 func TestIntegrationV1ParseInvalidURL(t *testing.T) {
-	r := setupTestRouter()
+	r := setupTestRouter(t, false)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/parse?url=just-text-no-url", nil)
@@ -135,7 +130,7 @@ func TestIntegrationV1ParseInvalidURL(t *testing.T) {
 }
 
 func TestIntegrationV1ParseUnknownPlatform(t *testing.T) {
-	r := setupTestRouter()
+	r := setupTestRouter(t, false)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/parse?url=https://example.com/video/123", nil)
@@ -153,7 +148,7 @@ func TestIntegrationV1ParseUnknownPlatform(t *testing.T) {
 }
 
 func TestIntegrationV1ParseIDUnknownSource(t *testing.T) {
-	r := setupTestRouter()
+	r := setupTestRouter(t, false)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/parse/unknown_platform/123", nil)
@@ -165,9 +160,8 @@ func TestIntegrationV1ParseIDUnknownSource(t *testing.T) {
 }
 
 func TestIntegrationV1ParseIDNoIDParse(t *testing.T) {
-	r := setupTestRouter()
+	r := setupTestRouter(t, false)
 
-	// redbook 没有 ID 解析器
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/parse/redbook/123", nil)
 	r.ServeHTTP(w, req)
@@ -184,7 +178,7 @@ func TestIntegrationV1ParseURLSuccess(t *testing.T) {
 		info.VideoUrl = "https://example.com/video.mp4"
 		return info, nil
 	}, nil)
-	r := setupTestRouter()
+	r := setupTestRouter(t, false)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/parse?url=https://v.douyin.com/test/", nil)
@@ -202,19 +196,7 @@ func TestIntegrationV1ParseURLSuccess(t *testing.T) {
 	if data["title"] != "测试视频" {
 		t.Errorf("data.title 应为 '测试视频'，实际: %v", data["title"])
 	}
-	// 验证 VideoParseInfo 所有字段始终存在
-	for _, key := range []string{"author", "title", "video_url", "music_url", "cover_url", "images"} {
-		if _, ok := data[key]; !ok {
-			t.Errorf("data 缺少必需字段: %s", key)
-		}
-	}
-	// 验证 author 嵌套字段
-	author := data["author"].(map[string]any)
-	for _, key := range []string{"uid", "name", "avatar"} {
-		if _, ok := author[key]; !ok {
-			t.Errorf("author 缺少必需字段: %s", key)
-		}
-	}
+	assertVideoParseInfoFields(t, data)
 }
 
 func TestIntegrationV1ParseIDSuccess(t *testing.T) {
@@ -223,7 +205,7 @@ func TestIntegrationV1ParseIDSuccess(t *testing.T) {
 		info.Title = "ID解析视频"
 		return info, nil
 	})
-	r := setupTestRouter()
+	r := setupTestRouter(t, false)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/parse/douyin/123", nil)
@@ -241,25 +223,14 @@ func TestIntegrationV1ParseIDSuccess(t *testing.T) {
 	if data["title"] != "ID解析视频" {
 		t.Errorf("data.title 应为 'ID解析视频'，实际: %v", data["title"])
 	}
-	for _, key := range []string{"author", "title", "video_url", "music_url", "cover_url", "images"} {
-		if _, ok := data[key]; !ok {
-			t.Errorf("data 缺少必需字段: %s", key)
-		}
-	}
-	// 验证 author 嵌套字段
-	author := data["author"].(map[string]any)
-	for _, key := range []string{"uid", "name", "avatar"} {
-		if _, ok := author[key]; !ok {
-			t.Errorf("author 缺少必需字段: %s", key)
-		}
-	}
+	assertVideoParseInfoFields(t, data)
 }
 
 func TestIntegrationV1ParseURL422OnParseFailure(t *testing.T) {
 	stubParserFuncs(t, func(string) (*parser.VideoParseInfo, error) {
 		return nil, fmt.Errorf("upstream parse failed")
 	}, nil)
-	r := setupTestRouter()
+	r := setupTestRouter(t, false)
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/parse?url=https://v.douyin.com/test/", nil)
 	r.ServeHTTP(w, req)
@@ -279,7 +250,7 @@ func TestIntegrationV1ParseID422OnParseFailure(t *testing.T) {
 	stubParserFuncs(t, nil, func(string, string) (*parser.VideoParseInfo, error) {
 		return nil, fmt.Errorf("upstream parse failed")
 	})
-	r := setupTestRouter()
+	r := setupTestRouter(t, false)
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/parse/douyin/123", nil)
 	r.ServeHTTP(w, req)
@@ -296,13 +267,12 @@ func TestIntegrationV1ParseID422OnParseFailure(t *testing.T) {
 }
 
 func TestIntegrationLegacyRouteFormat(t *testing.T) {
-	r := setupTestRouter()
+	r := setupTestRouter(t, false)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/video/share/url/parse?url=invalid", nil)
 	r.ServeHTTP(w, req)
 
-	// 旧路由始终 200
 	if w.Code != 200 {
 		t.Errorf("旧路由应始终 200，实际: %d", w.Code)
 	}
@@ -317,7 +287,7 @@ func TestIntegrationLegacyRouteFormat(t *testing.T) {
 }
 
 func TestIntegrationCORSHeaders(t *testing.T) {
-	r := setupTestRouter()
+	r := setupTestRouter(t, false)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("OPTIONS", "/api/v1/health", nil)
@@ -329,7 +299,7 @@ func TestIntegrationCORSHeaders(t *testing.T) {
 }
 
 func TestIntegrationNotFound(t *testing.T) {
-	r := setupTestRouter()
+	r := setupTestRouter(t, false)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/nonexistent", nil)
@@ -341,7 +311,7 @@ func TestIntegrationNotFound(t *testing.T) {
 }
 
 func TestIntegrationV1ParseIDMissingPathParam(t *testing.T) {
-	r := setupTestRouter()
+	r := setupTestRouter(t, false)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/parse/douyin", nil)
@@ -353,13 +323,12 @@ func TestIntegrationV1ParseIDMissingPathParam(t *testing.T) {
 }
 
 func TestIntegrationLegacyIDParse(t *testing.T) {
-	r := setupTestRouter()
+	r := setupTestRouter(t, false)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/video/id/parse?source=unknown&video_id=123", nil)
 	r.ServeHTTP(w, req)
 
-	// 旧路由始终 200
 	if w.Code != 200 {
 		t.Errorf("旧路由应始终 200，实际: %d", w.Code)
 	}
@@ -370,12 +339,9 @@ func TestIntegrationLegacyIDParse(t *testing.T) {
 	}
 }
 
-// === 认证覆盖测试 ===
-
 func TestIntegrationAuthProtectsV1Parse(t *testing.T) {
-	r := setupTestRouterWithAuth()
+	r := setupTestRouter(t, true)
 
-	// 无凭证访问受保护路由 → 401
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/parse?url=test", nil)
 	r.ServeHTTP(w, req)
@@ -383,7 +349,6 @@ func TestIntegrationAuthProtectsV1Parse(t *testing.T) {
 		t.Errorf("无凭证访问 /api/v1/parse 应返回 401，实际: %d", w.Code)
 	}
 
-	// 正确凭证 → 通过认证（可能 400 因为 URL 无效，但不应该是 401）
 	w2 := httptest.NewRecorder()
 	req2 := httptest.NewRequest("GET", "/api/v1/parse?url=test", nil)
 	req2.SetBasicAuth("testuser", "testpass")
@@ -394,9 +359,8 @@ func TestIntegrationAuthProtectsV1Parse(t *testing.T) {
 }
 
 func TestIntegrationAuthExemptPlatforms(t *testing.T) {
-	r := setupTestRouterWithAuth()
+	r := setupTestRouter(t, true)
 
-	// /api/v1/platforms 无需认证
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/platforms", nil)
 	r.ServeHTTP(w, req)
@@ -406,9 +370,8 @@ func TestIntegrationAuthExemptPlatforms(t *testing.T) {
 }
 
 func TestIntegrationAuthExemptHealth(t *testing.T) {
-	r := setupTestRouterWithAuth()
+	r := setupTestRouter(t, true)
 
-	// /api/v1/health 无需认证
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/health", nil)
 	r.ServeHTTP(w, req)
@@ -418,9 +381,8 @@ func TestIntegrationAuthExemptHealth(t *testing.T) {
 }
 
 func TestIntegrationAuthExemptWebUI(t *testing.T) {
-	r := setupTestRouterWithAuth()
+	r := setupTestRouter(t, true)
 
-	// GET /（Web UI）无需认证
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/", nil)
 	r.ServeHTTP(w, req)
@@ -430,9 +392,8 @@ func TestIntegrationAuthExemptWebUI(t *testing.T) {
 }
 
 func TestIntegrationAuthProtectsLegacyRoutes(t *testing.T) {
-	r := setupTestRouterWithAuth()
+	r := setupTestRouter(t, true)
 
-	// 旧路由 /video/share/url/parse 也受认证保护
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/video/share/url/parse?url=test", nil)
 	r.ServeHTTP(w, req)
@@ -440,7 +401,6 @@ func TestIntegrationAuthProtectsLegacyRoutes(t *testing.T) {
 		t.Errorf("无凭证访问旧路由应返回 401，实际: %d", w.Code)
 	}
 
-	// 旧路由 /video/id/parse 也受认证保护
 	w2 := httptest.NewRecorder()
 	req2 := httptest.NewRequest("GET", "/video/id/parse?source=test&video_id=123", nil)
 	r.ServeHTTP(w2, req2)
