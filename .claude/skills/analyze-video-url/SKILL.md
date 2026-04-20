@@ -152,7 +152,7 @@ description: Use when the user provides a video share link or playback page URL 
 - 作者头像: [JSON 路径]
 
 ### 6. 待修改文件清单
-[列出所有需要新建或修改的文件路径]
+[列出所有需要新建或修改的文件路径，包括 parser/vars.go、parser/<platform>.go、parser/<platform>_test.go、README.md、cmd/handlers.go]
 ```
 
 报告输出后，询问用户是否继续生成代码。
@@ -212,6 +212,12 @@ description: Use when the user provides a video share link or playback page URL 
    - 正则/路径匹配的单元测试
    - 不生成真实 URL 的集成测试
 
+4. **`README.md` 变更**：
+   - 在「视频」表格中按字母序插入新平台行：`| 平台名称 | ✔ |`
+
+5. **`cmd/handlers.go` 变更**：
+   - 在 `platformNames` 映射中按字母序插入新条目：`"<source>": "平台显示名称"`
+
 ### 步骤 6：代码审查与确认
 
 **所有代码变更（包括 `vars.go`）都必须经用户确认后才写入文件。**
@@ -221,6 +227,8 @@ description: Use when the user provides a video share link or playback page URL 
    - `parser/<platform>.go`（新解析器或已有解析器扩展）
    - `parser/vars.go`（常量和映射条目变更）
    - `parser/<platform>_test.go`（测试文件）
+   - `README.md`（支持平台表格新增行）
+   - `cmd/handlers.go`（platformNames 映射新增条目）
 3. 等待用户确认后才执行文件写入
 4. 写入后运行 `go build ./...` 验证编译通过
 5. 写入后运行 `go test ./parser/...` 验证测试通过
