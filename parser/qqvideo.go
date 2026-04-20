@@ -11,6 +11,9 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+// qqVidPathRe 匹配腾讯视频页面路径中的视频 ID
+var qqVidPathRe = regexp.MustCompile(`/x/(?:page|cover)/(?:[^/]+/)?(\w+)\.html`)
+
 // qqVideo 腾讯视频解析器
 type qqVideo struct{}
 
@@ -81,7 +84,7 @@ func (q qqVideo) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	// 提取视频元信息
 	vid := viResult.Get("vid").String()
 	title := viResult.Get("ti").String()
-	coverUrl := fmt.Sprintf("http://puui.qpic.cn/vpic_cover/%s/%s_hz.jpg/496", vid, vid)
+	coverUrl := fmt.Sprintf("https://puui.qpic.cn/vpic_cover/%s/%s_hz.jpg/496", vid, vid)
 
 	parseRes := &VideoParseInfo{
 		Title:    title,
@@ -121,9 +124,7 @@ func (q qqVideo) extractVid(rawUrl string) (string, error) {
 
 // extractVidFromPath 从 URL 路径中提取视频 ID
 func (q qqVideo) extractVidFromPath(path string) (string, error) {
-	// 匹配 /x/page/{vid}.html 或 /x/cover/{cid}/{vid}.html
-	re := regexp.MustCompile(`/x/(?:page|cover)/(?:[^/]+/)?(\w+)\.html`)
-	matches := re.FindStringSubmatch(path)
+	matches := qqVidPathRe.FindStringSubmatch(path)
 	if len(matches) >= 2 && len(matches[1]) > 0 {
 		return matches[1], nil
 	}

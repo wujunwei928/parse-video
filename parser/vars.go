@@ -215,22 +215,22 @@ var videoSourceInfoMapping = map[string]videoSourceInfo{
 		VideoShareUrlParser: qqVideo{},
 		VideoIdParser:       qqVideo{},
 	},
-		SourceSohu: {
-			VideoShareUrlDomain: []string{
-				"tv.sohu.com",
-				"my.tv.sohu.com",
-			},
-			VideoShareUrlParser: sohuVideo{},
-			VideoIdParser:       sohuVideo{},
+	SourceSohu: {
+		VideoShareUrlDomain: []string{
+			"tv.sohu.com",
+			"my.tv.sohu.com",
 		},
-		SourceCCTV: {
-			VideoShareUrlDomain: []string{
-				"tv.cctv.cn",
-				"tv.cctv.com",
-			},
-			VideoShareUrlParser: cctvVideo{},
-			VideoIdParser:       cctvVideo{},
+		VideoShareUrlParser: sohuVideo{},
+		VideoIdParser:       sohuVideo{},
+	},
+	SourceCCTV: {
+		VideoShareUrlDomain: []string{
+			"tv.cctv.cn",
+			"tv.cctv.com",
 		},
+		VideoShareUrlParser: cctvVideo{},
+		VideoIdParser:       cctvVideo{},
+	},
 	}
 
 // VideoSourceInfoMapping 导出的视频渠道映射信息，供外部使用

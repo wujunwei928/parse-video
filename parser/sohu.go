@@ -11,6 +11,12 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+// sohuBase64VidRe 匹配 tv.sohu.com/v/{base64}.html 格式的路径
+var sohuBase64VidRe = regexp.MustCompile(`/v/([A-Za-z0-9+/=]+)\.html`)
+
+// sohuUserVidRe 匹配 us/{uid}/{vid}.shtml 格式的路径（解码后或直链）
+var sohuUserVidRe = regexp.MustCompile(`/?us/\d+/(\d+)\.shtml`)
+
 // sohuVideo 搜狐视频解析器
 type sohuVideo struct{}
 
@@ -91,8 +97,7 @@ func (s sohuVideo) parseVideoID(videoId string) (*VideoParseInfo, error) {
 func (s sohuVideo) extractVid(rawUrl string) (string, error) {
 	// 匹配 tv.sohu.com/v/{base64}.html 格式
 	// base64 编码部分解码后为 us/{uid}/{vid}.shtml
-	base64Re := regexp.MustCompile(`/v/([A-Za-z0-9+/=]+)\.html`)
-	if matches := base64Re.FindStringSubmatch(rawUrl); len(matches) >= 2 {
+	if matches := sohuBase64VidRe.FindStringSubmatch(rawUrl); len(matches) >= 2 {
 		decoded, err := base64.StdEncoding.DecodeString(matches[1])
 		if err != nil {
 			return "", fmt.Errorf("base64解码失败: %w", err)
@@ -103,20 +108,15 @@ func (s sohuVideo) extractVid(rawUrl string) (string, error) {
 
 	// 匹配 my.tv.sohu.com/us/{uid}/{vid}.shtml 格式
 	if strings.Contains(rawUrl, "my.tv.sohu.com") || strings.Contains(rawUrl, "tv.sohu.com/us/") {
-		// 从路径中提取 vid
-		vidRe := regexp.MustCompile(`/us/\d+/(\d+)\.shtml`)
-		if matches := vidRe.FindStringSubmatch(rawUrl); len(matches) >= 2 {
-			return matches[1], nil
-		}
+		return s.extractVidFromPath(rawUrl)
 	}
 
 	return "", errors.New("不是有效的搜狐视频链接")
 }
 
-// extractVidFromPath 从解码后的路径中提取视频 ID
+// extractVidFromPath 从路径中提取视频 ID（适配 us/{uid}/{vid}.shtml 格式）
 func (s sohuVideo) extractVidFromPath(path string) (string, error) {
-	re := regexp.MustCompile(`/?us/\d+/(\d+)\.shtml`)
-	matches := re.FindStringSubmatch(path)
+	matches := sohuUserVidRe.FindStringSubmatch(path)
 	if len(matches) >= 2 && len(matches[1]) > 0 {
 		return matches[1], nil
 	}

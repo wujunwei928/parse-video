@@ -12,3 +12,17 @@ repos:
   rev: v0.0.1
   hooks:
     - id: go-unit-tests
+- repo: local
+  hooks:
+    - id: go-fmt
+      name: gofmt
+      entry: gofmt -l -d
+      language: system
+      types: [go]
+      pass_filenames: true
+    - id: go-imports
+      name: goimports
+      entry: goimports -l -d
+      language: system
+      types: [go]
+      pass_filenames: true

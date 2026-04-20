@@ -9,6 +9,9 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+// cctvGuidRe 匹配央视网页面中嵌入的视频 GUID
+var cctvGuidRe = regexp.MustCompile(`var\s+guid\s*=\s*"([^"]+)"`)
+
 // cctvVideo 央视网视频解析器
 type cctvVideo struct{}
 
@@ -90,8 +93,7 @@ func (c cctvVideo) extractGuid(pageUrl string) (string, error) {
 
 // extractGuidFromHTML 从 HTML 字符串中提取视频 GUID
 func (c cctvVideo) extractGuidFromHTML(html string) (string, error) {
-	re := regexp.MustCompile(`var\s+guid\s*=\s*"([^"]+)"`)
-	matches := re.FindStringSubmatch(html)
+	matches := cctvGuidRe.FindStringSubmatch(html)
 	if len(matches) >= 2 && len(matches[1]) > 0 {
 		return matches[1], nil
 	}
