@@ -27,6 +27,7 @@ func sendLegacyResponse(c *gin.Context, data *parser.VideoParseInfo, err error) 
 var platformNames = map[string]string{
 	"acfun":        "AcFun",
 	"bilibili":     "哔哩哔哩",
+	"cctv":         "央视网",
 	"doupai":       "逗拍",
 	"douyin":       "抖音",
 	"haokan":       "好看视频",

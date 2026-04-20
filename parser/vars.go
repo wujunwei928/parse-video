@@ -26,6 +26,7 @@ const (
 	SourceBiliBili     = "bilibili"     // 哔哩哔哩
 	SourceTwitter      = "twitter"      // X/Twitter
 	SourceQQVideo      = "qqvideo"      // 腾讯视频
+	SourceCCTV         = "cctv"         // 央视网
 	SourceSohu         = "sohu"         // 搜狐视频
 )
 
@@ -221,6 +222,14 @@ var videoSourceInfoMapping = map[string]videoSourceInfo{
 			},
 			VideoShareUrlParser: sohuVideo{},
 			VideoIdParser:       sohuVideo{},
+		},
+		SourceCCTV: {
+			VideoShareUrlDomain: []string{
+				"tv.cctv.cn",
+				"tv.cctv.com",
+			},
+			VideoShareUrlParser: cctvVideo{},
+			VideoIdParser:       cctvVideo{},
 		},
 	}
 
