@@ -2842,7 +2842,7 @@ function showThemeNotification(themeName) {
 // 原有的解析功能
 function setValue() {
     var data = document.getElementById("url").value;
-    let regex = /http[s]?:\/\/[\w.-]+[\w\/-]*[\w.-]*\??[\w=&:\-\+\%]*[/]*/;
+    let regex = /http[s]?:\/\/[\w.-]+[\w\/-]*[\w.-:]*\??[\w=&:\-\+\%.]*[/]*/;
     var v = data.match(regex)[0];
     console.log(v);
 
