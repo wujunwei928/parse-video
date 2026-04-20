@@ -231,7 +231,7 @@ var videoSourceInfoMapping = map[string]videoSourceInfo{
 		VideoShareUrlParser: cctvVideo{},
 		VideoIdParser:       cctvVideo{},
 	},
-	}
+}
 
 // VideoSourceInfoMapping 导出的视频渠道映射信息，供外部使用
 var VideoSourceInfoMapping = videoSourceInfoMapping
