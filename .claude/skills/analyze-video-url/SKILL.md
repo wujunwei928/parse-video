@@ -62,8 +62,8 @@ description: Use when the user provides a video share link or playback page URL 
 | 未命中 | 命中平台 Z | 跳转命中 | 平台 Z，需补充域名注册 |
 | 未命中 | 未命中 | → 进入阶段 C | — |
 
-5. 分类为「跳转命中」时，记录原始域名（需在 `vars.go` 补充注册）和完整重定向路径
-6. 未命中的情况 → 进入阶段 C
+7. 分类为「跳转命中」时，记录原始域名（需在 `vars.go` 补充注册）和完整重定向路径
+8. 未命中的情况 → 进入阶段 C
 
 #### 阶段 C：页面结构特征匹配（仅阶段 A 和 B 均未命中时执行）
 
@@ -78,7 +78,7 @@ description: Use when the user provides a video share link or playback page URL 
 
 ### 步骤 3：页面抓取与结构深度分析
 
-对目标 URL 进行深入分析，使用 HTTP 客户端（模拟移动端 UA：`Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15`）请求页面。
+对目标 URL 进行深入分析，使用 HTTP 客户端（模拟移动端 UA，使用 `parser/vars.go` 中的 `DefaultUserAgent`）请求页面。
 
 按以下清单逐项分析并记录结果：
 
