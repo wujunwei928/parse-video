@@ -36,11 +36,24 @@ go build -o parse-video .
 # Run all tests
 go test ./...
 
-# Run specific test file
-go test ./parser/douyin_test.go
+# Run specific package tests
+go test ./parser/ -run TestDouYin
+go test ./cmd/ -run TestIntegrationV1ParseURL
 
 # Run tests with verbose output
 go test -v ./...
+```
+
+### Code Quality
+```bash
+# Pre-commit checks (includes go-unit-tests, gofmt, goimports)
+pre-commit run --all-files
+
+# Install pre-commit hooks
+pre-commit install
+
+# Hot reload development (requires air)
+air
 ```
 
 ### Docker
@@ -163,6 +176,15 @@ Key platforms include:
 4. Write unit tests for new parser
 5. Update README.md with platform support
 
+## Gotchas
+
+- **移动端 UA 必须**：所有平台请求必须使用移动端 User-Agent（`DefaultUserAgent` 在 `parser/vars.go` 中定义），桌面端 UA 会导致解析失败
+- **抖音图集/视频分支**：抖音解析器根据 HTML 中的 canonical URL 判断是图集（`/note/`）还是视频，走不同的 API 路径
+- **域名匹配方式**：`ParseVideoShareUrl` 使用 `strings.Contains` 匹配域名，不是精确匹配；`matchPlatform`（handler 层）使用 `url.Parse` + 后缀匹配
+- **旧路由兼容**：`/video/share/url/parse` 和 `/video/id/parse` 仍保留，响应格式与 v1 API 不同（`code` 字段而非 `status` 字段）
+- **无状态设计**：服务不持久化数据，每次请求独立处理，无数据库
+- **批量并发控制**：CLI 批量解析使用 semaphore channel（并发度 8），非无限制 goroutine
+
 ## Agent skills
 
 ### Issue tracker
@@ -181,60 +203,9 @@ Single-context layout: one `CONTEXT.md` and `docs/adr/` at the repo root. See `d
 
 ## AI 知识库使用规则（强制）
 
-> **IMPORTANT**: 本项目有 AI 编程知识库。任何代码修改前，必须先读取知识库中的相关文档。这不是建议，是硬性规则。违反此规则可能导致误改核心逻辑、破坏现有功能。
+> **IMPORTANT**: 本项目有 AI 编程知识库。任何代码修改前，必须先读取知识库中的相关文档。详见 `docs/knowledge/00_ai_entry.md`。
 
-### 知识库位置
-- 项目知识库：`docs/knowledge/`
-- **入口文件（必读）**：`docs/knowledge/00_ai_entry.md`
-- **全局索引（必读）**：`docs/knowledge/99_global_index.md`
-
-### 强制工作流
-
-**每次接到任务时，执行以下步骤：**
-
-1. **先读** `docs/knowledge/99_global_index.md`，根据任务类型确定需要读哪些文档
-2. **再读**对应文档，理解相关流程和约束
-3. **然后**才开始编写或修改代码
-4. **最后**判断是否需要更新知识库
-
-跳过步骤 1-2 直接修改代码是**被禁止的**。
-
-### 按任务类型的必读文档
-
-| 任务类型 | 必须先读 | 原因 |
-|---|---|---|
-| 新增功能 | 全局索引 → 编码规则 | 确认目录放置和代码风格 |
-| 修改业务逻辑 | 全局索引 → 核心流程 → 变更安全 | 确认影响范围 |
-| 修改高风险区域 | 全局索引 → 变更安全 | 解析路由/中间件/认证 |
-| 新增接口 | 全局索引 → 核心流程 → 编码规则 | 确认路由和响应格式 |
-| 修 Bug | 全局索引 → 核心流程 | 理解上下文再修复 |
-
-### 高风险修改约束
-
-修改以下区域前**必须阅读变更安全文档**，否则禁止修改：
-- 解析路由和平台映射表
-- HTTP 中间件栈
-- Basic Auth 认证逻辑
-- URL 提取正则
-- 部署配置/CI/CD
-
-禁止事项：
-- 禁止一次性大范围重构稳定代码
-- 禁止删除未知用途代码
-- 禁止未确认调用方就改公共函数签名
-- 禁止把密钥写入代码
-
-### 变更后知识库维护
-
-代码发生以下变更后，必须同步更新对应的知识库文档：
-- 新增/删除 API → 项目地图 + 核心流程 + 全局索引
-- 修改中间件 → 核心流程 + 变更安全
-- 新增/修改平台解析器 → 项目地图 + 全局索引
-- 新增环境变量 → 项目地图 + 构建部署 + 变更安全
-- 修改部署方式 → 构建部署 + 变更安全
-
-### 不需要更新知识库的情况
-- 纯 UI 文案微调
-- 无业务含义的样式调整
-- 局部 bugfix 且不改变流程
-- 测试用例补充但不改变规则
+- **入口文件**：`docs/knowledge/00_ai_entry.md`
+- **全局索引**：`docs/knowledge/99_global_index.md`（按任务类型定位必读文档）
+- **强制流程**：先读全局索引 → 再读对应文档 → 然后编码 → 最后判断是否更新知识库
+- **高风险区域**：解析路由、中间件栈、Basic Auth、URL 正则、部署配置 → 修改前必须读 `docs/knowledge/05_change_safety.md`
