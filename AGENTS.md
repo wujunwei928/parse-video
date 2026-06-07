@@ -25,3 +25,38 @@ Recent history uses conventional prefixes such as `feat(api):`, `fix:`, `docs:`,
 
 ## Configuration & Security
 Use environment variables instead of hardcoded secrets: `PARSE_VIDEO_USERNAME`, `PARSE_VIDEO_PASSWORD`, `RATE_LIMIT_RPM`, and `CORS_ORIGINS`. When adding new parsers, avoid logging credentials or raw private tokens and keep outbound requests consistent with the existing platform client behavior.
+
+---
+
+# AI 编程规则
+
+> 本项目有 AI 编程知识库（docs/knowledge/）。修改代码前必须先阅读相关文档。
+
+## 必读文件
+
+1. `docs/knowledge/99_global_index.md` — 按任务类型定位需要读的文档
+2. 根据任务读取对应文档后，才能开始编码
+
+## 工作流
+
+接到任何编码任务后：
+1. 读 `docs/knowledge/99_global_index.md`，确定本次任务需要哪些上下文
+2. 读对应的知识库文档
+3. 编写代码
+4. 判断是否需要更新知识库
+
+## 高风险区域
+
+修改以下区域前，必须先读 docs/knowledge/ 中的变更安全文档（05_change_safety.md）：
+- 解析路由和平台映射表
+- HTTP 中间件栈
+- Basic Auth 认证
+- URL 提取正则
+- 部署配置/CI/CD
+
+## 禁止事项
+
+- 禁止大范围重构稳定代码
+- 禁止删除未知用途代码
+- 禁止硬编码密钥
+- 禁止不读知识库就修改核心逻辑
