@@ -198,6 +198,15 @@ docker run -d -p 9090:9090 wujunwei928/parse-video -port 9090
 docker run -d -p 8080:8080 -e PARSE_VIDEO_USERNAME=basic_auth_username -e PARSE_VIDEO_PASSWORD=basic_auth_password wujunwei928/parse-video
  ```
 
+设置 HTTP 代理（所有解析请求通过代理发送）
+```bash
+# 无认证代理
+docker run -d -p 8080:8080 -e PARSE_VIDEO_PROXY=http://proxy.example.com:端口 wujunwei928/parse-video
+
+# 有认证代理
+docker run -d -p 8080:8080 -e PARSE_VIDEO_PROXY=http://user:pass@proxy.example.com:端口 wujunwei928/parse-video
+```
+
 查看前端页面  
 访问: http://127.0.0.1:8080/  
 

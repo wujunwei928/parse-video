@@ -5,14 +5,13 @@ import (
 	"regexp"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/go-resty/resty/v2"
 )
 
 type lvZhou struct {
 }
 
 func (l lvZhou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
-	client := resty.New()
+	client := newClient()
 	res, err := client.R().
 		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
 		Get(shareUrl)

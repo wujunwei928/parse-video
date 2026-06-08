@@ -4,7 +4,6 @@ import (
 	"errors"
 	"regexp"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/tidwall/gjson"
 )
 
@@ -29,7 +28,7 @@ func (h huYa) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		HttpHeaderReferer:   "https://v.huya.com/",
 	}
 
-	client := resty.New()
+	client := newClient()
 	res, err := client.R().
 		SetHeaders(headers).
 		Get(reqUrl)

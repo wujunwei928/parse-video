@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/tidwall/gjson"
 )
 
@@ -38,7 +37,7 @@ func (c cctvVideo) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		videoId,
 	)
 
-	client := resty.New()
+	client := newClient()
 	res, err := client.R().
 		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
 		Get(apiUrl)
@@ -80,7 +79,7 @@ func (c cctvVideo) parseVideoID(videoId string) (*VideoParseInfo, error) {
 
 // extractGuid 从页面 URL 请求并提取视频 GUID
 func (c cctvVideo) extractGuid(pageUrl string) (string, error) {
-	client := resty.New()
+	client := newClient()
 	res, err := client.R().
 		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
 		Get(pageUrl)

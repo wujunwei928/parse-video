@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/url"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/tidwall/gjson"
 )
 
@@ -24,7 +23,7 @@ func (h haoKan) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 
 func (h haoKan) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	reqUrl := "https://haokan.baidu.com/v?_format=json&vid=" + videoId
-	client := resty.New()
+	client := newClient()
 	res, err := client.R().
 		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
 		Get(reqUrl)

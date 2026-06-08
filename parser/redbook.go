@@ -9,13 +9,12 @@ import (
 
 	"github.com/tidwall/gjson"
 
-	"github.com/go-resty/resty/v2"
 )
 
 type redBook struct{}
 
 func (r redBook) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
-	client := resty.New()
+	client := newClient()
 	videoRes, err := client.R().
 		SetHeader(HttpHeaderUserAgent, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36 Edg/129.0.0.0").
 		Get(shareUrl)

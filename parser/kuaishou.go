@@ -15,7 +15,7 @@ import (
 type kuaiShou struct{}
 
 func (k kuaiShou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
-	client := resty.New()
+	client := newClient()
 	//// disable redirects in the HTTP client, get params before redirects
 	//client.SetRedirectPolicy(resty.NoRedirectPolicy())
 	// 设置自定义重定向策略

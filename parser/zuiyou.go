@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/tidwall/gjson"
 )
 
@@ -29,7 +28,7 @@ func (z zuiYou) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 		"pid":  intPid,
 	}
 
-	client := resty.New()
+	client := newClient()
 	res, err := client.R().
 		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
 		SetBody(postData).

@@ -4,7 +4,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/tidwall/gjson"
 )
 
@@ -12,7 +11,7 @@ type acFun struct {
 }
 
 func (a acFun) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
-	client := resty.New()
+	client := newClient()
 	res, err := client.R().
 		SetHeader(HttpHeaderUserAgent, "User-Agent:Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1").
 		Get(shareUrl)

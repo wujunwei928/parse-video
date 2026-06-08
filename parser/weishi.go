@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/url"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/tidwall/gjson"
 )
 
@@ -13,7 +12,7 @@ type weiShi struct {
 
 func (w weiShi) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	reqUrl := "https://h5.weishi.qq.com/webapp/json/weishi/WSH5GetPlayPage?feedid=" + videoId
-	client := resty.New()
+	client := newClient()
 	res, err := client.R().
 		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
 		Get(reqUrl)

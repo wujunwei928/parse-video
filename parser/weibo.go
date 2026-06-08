@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/tidwall/gjson"
 )
 
@@ -45,7 +44,7 @@ func (w weiBo) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 
 func (w weiBo) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	reqUrl := fmt.Sprintf("https://h5.video.weibo.com/api/component?page=/show/%s", videoId)
-	client := resty.New()
+	client := newClient()
 	videoRes, err := client.R().
 		SetHeader(HttpHeaderCookie, "login_sid_t=6b652c77c1a4bc50cb9d06b24923210d; cross_origin_proto=SSL; WBStorage=2ceabba76d81138d|undefined; _s_tentry=passport.weibo.com; Apache=7330066378690.048.1625663522444; SINAGLOBAL=7330066378690.048.1625663522444; ULV=1625663522450:1:1:1:7330066378690.048.1625663522444:; TC-V-WEIBO-G0=35846f552801987f8c1e8f7cec0e2230; SUB=_2AkMXuScYf8NxqwJRmf8RzmnhaoxwzwDEieKh5dbDJRMxHRl-yT9jqhALtRB6PDkJ9w8OaqJAbsgjdEWtIcilcZxHG7rw; SUBP=0033WrSXqPxfM72-Ws9jqgMF55529P9D9W5Qx3Mf.RCfFAKC3smW0px0; XSRF-TOKEN=JQSK02Ijtm4Fri-YIRu0-vNj").
 		SetHeader(HttpHeaderReferer, "https://h5.video.weibo.com/show/"+videoId).
@@ -79,7 +78,7 @@ func (w weiBo) parseVideoID(videoId string) (*VideoParseInfo, error) {
 func (w weiBo) parsePostUrl(postId string, originalUrl string) (*VideoParseInfo, error) {
 	// Try mobile API first
 	reqUrl := fmt.Sprintf("https://m.weibo.cn/statuses/show?id=%s", postId)
-	client := resty.New()
+	client := newClient()
 
 	res, err := client.R().
 		SetHeader(HttpHeaderUserAgent, "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1").

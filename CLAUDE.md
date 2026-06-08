@@ -78,10 +78,11 @@ docker run -d -p 8080:8080 -e PARSE_VIDEO_USERNAME=user -e PARSE_VIDEO_PASSWORD=
 1. **Parser System** (`parser/`):
    - `parser.go`: Main entry point with URL routing logic
    - `vars.go`: Defines platform constants, interfaces, and data structures
+   - `client.go`: HTTP 客户端工厂（代理注入、并发安全）
    - Platform-specific parsers (e.g., `douyin.go`, `kuaishou.go`)
 
 2. **CLI & Web Server** (`cmd/`):
-   - `root.go`: Cobra root command (default subcommand: serve)
+   - `root.go`: Cobra root command (default subcommand: serve, PersistentPreRunE 初始化代理)
    - `serve.go`: Gin-based HTTP server with middleware stack
    - `parse.go`: CLI subcommand for parsing share links (single/batch)
    - `id.go`: CLI subcommand for parsing by video ID + platform
@@ -144,6 +145,7 @@ Key platforms include:
 - `PARSE_VIDEO_PASSWORD`: Basic auth password (optional)
 - `RATE_LIMIT_RPM`: Rate limit per IP per minute (default: 60)
 - `CORS_ORIGINS`: Allowed CORS origins, comma-separated (default: `*`)
+- `PARSE_VIDEO_PROXY`: HTTP/HTTPS 代理地址，格式 `http://[user:pass@]host:port`（可选，不设置则直连）
 
 ### Dependencies
 - `github.com/gin-gonic/gin`: Web framework

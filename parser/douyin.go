@@ -20,7 +20,7 @@ type douYin struct{}
 func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	reqUrl := fmt.Sprintf("https://www.iesdouyin.com/share/video/%s", videoId)
 
-	client := resty.New()
+	client := newClient()
 	res, err := client.R().
 		SetHeader(HttpHeaderUserAgent, "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1").
 		Get(reqUrl)
@@ -173,7 +173,7 @@ func (d douYin) parseAppShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	// 适配App分享链接类型:
 	// https://v.douyin.com/xxxxxx/
 
-	client := resty.New()
+	client := newClient()
 	// disable redirects in the HTTP client, get params before redirects
 	client.SetRedirectPolicy(resty.NoRedirectPolicy())
 	res, err := client.R().
@@ -248,7 +248,7 @@ func (d douYin) parseVideoIdFromPath(urlPath string) (string, error) {
 }
 
 func (d douYin) getRedirectUrl(videoInfo *VideoParseInfo) {
-	client := resty.New()
+	client := newClient()
 	client.SetRedirectPolicy(resty.NoRedirectPolicy())
 	res2, _ := client.R().
 		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).

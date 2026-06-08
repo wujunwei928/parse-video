@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/url"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/tidwall/gjson"
 )
 
@@ -26,7 +25,7 @@ func (q quanMin) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 
 func (q quanMin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	reqUrl := "https://quanmin.hao222.com/wise/growth/api/sv/immerse?source=share-h5&pd=qm_share_mvideo&_format=json&vid=" + videoId
-	client := resty.New()
+	client := newClient()
 	res, err := client.R().
 		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
 		Get(reqUrl)

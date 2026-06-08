@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/tidwall/gjson"
 )
 
@@ -31,7 +30,7 @@ func (s sixRoom) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
 
 func (s sixRoom) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	reqUrl := "https://v.6.cn/coop/mobile/index.php?padapi=minivideo-watchVideo.php&av=3.0&encpass=&logiuid=&isnew=1&from=0&vid=" + videoId
-	client := resty.New()
+	client := newClient()
 	videoRes, err := client.R().
 		SetHeader(HttpHeaderReferer, "https://m.6.cn/v/"+videoId).
 		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).

@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/tidwall/gjson"
 )
 
@@ -42,7 +41,7 @@ func (s sohuVideo) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		videoId,
 	)
 
-	client := resty.New()
+	client := newClient()
 	res, err := client.R().
 		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
 		Get(apiUrl)

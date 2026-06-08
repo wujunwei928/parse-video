@@ -3,10 +3,10 @@ package parser
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/go-resty/resty/v2"
 )
 
 // 添加Cookie可以爬取更高清的视频，记得要把下面请求里的Cookie的注释也去掉
@@ -121,20 +121,16 @@ func (b biliBili) getBvidFromURL(rawURL string) (string, error) {
 	}
 
 	if strings.Contains(parsedURL.Host, "b23.tv") {
-		client := &http.Client{
-			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				return http.ErrUseLastResponse
-			},
-		}
-		resp, err := client.Get(rawURL)
+		client := newClient()
+		client.SetRedirectPolicy(resty.NoRedirectPolicy())
+		resp, err := client.R().
+			SetHeader(HttpHeaderUserAgent, UserAgent).
+			Get(rawURL)
 		if err != nil {
 			return "", fmt.Errorf("请求b23.tv短链失败: %v", err)
 		}
-		defer func(Body io.ReadCloser) {
-			_ = Body.Close()
-		}(resp.Body)
 
-		location := resp.Header.Get("Location")
+		location := resp.Header().Get("Location")
 		if location == "" {
 			return "", fmt.Errorf("无法从b23.tv获取重定向链接")
 		}
@@ -155,28 +151,20 @@ func (b biliBili) getBvidFromURL(rawURL string) (string, error) {
 }
 
 func (b biliBili) sendBiliRequest(apiURL string) ([]byte, error) {
-	req, err := http.NewRequest("GET", apiURL, nil)
+	client := newClient()
+	resp, err := client.R().
+		SetHeader(HttpHeaderUserAgent, UserAgent).
+		// 如需爬取更高清的视频请取消这里的注释
+		// SetHeader(HttpHeaderCookie, BiliCookie).
+		SetHeader(HttpHeaderReferer, "https://www.bilibili.com/").
+		Get(apiURL)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("User-Agent", UserAgent)
-	// 如需爬取更高清的视频请取消这里的注释
-	// req.Header.Set("Cookie", BiliCookie)
-	req.Header.Set("Referer", "https://www.bilibili.com/")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP请求失败, 状态码: %d", resp.StatusCode)
+	if resp.StatusCode() != 200 {
+		return nil, fmt.Errorf("HTTP请求失败, 状态码: %d", resp.StatusCode())
 	}
 
-	return io.ReadAll(resp.Body)
+	return resp.Body(), nil
 }

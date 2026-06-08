@@ -13,7 +13,7 @@ type piPiXia struct {
 
 func (p piPiXia) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	reqUrl := "https://api.pipix.com/bds/cell/cell_comment/?offset=0&cell_type=1&api_version=1&cell_id=" + videoId + "&ac=wifi&channel=huawei_1319_64&aid=1319&app_name=super"
-	client := resty.New()
+	client := newClient()
 	res, err := client.R().
 		SetHeader(HttpHeaderUserAgent, DefaultUserAgent).
 		Get(reqUrl)
@@ -65,7 +65,7 @@ func (p piPiXia) parseVideoID(videoId string) (*VideoParseInfo, error) {
 }
 
 func (p piPiXia) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
-	client := resty.New()
+	client := newClient()
 	// disable redirects in the HTTP client, get params before redirects
 	client.SetRedirectPolicy(resty.NoRedirectPolicy())
 	res, err := client.R().

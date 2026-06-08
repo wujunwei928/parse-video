@@ -14,7 +14,7 @@ type xiGua struct {
 }
 
 func (x xiGua) parseShareUrl(shareUrl string) (*VideoParseInfo, error) {
-	client := resty.New()
+	client := newClient()
 	// disable redirects in the HTTP client, get params before redirects
 	client.SetRedirectPolicy(resty.NoRedirectPolicy())
 	res, err := client.R().
@@ -45,7 +45,7 @@ func (x xiGua) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		HttpHeaderCookie:    "MONITOR_WEB_ID=7892c49b-296e-4499-8704-e47c1b150c18; ixigua-a-s=1; ttcid=af99669b6304453480454f150701d5c226; BD_REF=1; __ac_nonce=060d88ff000a75e8d17eb; __ac_signature=_02B4Z6wo00f01kX9ZpgAAIDAKIBBQUIPYT5F2WIAAPG2ad; ttwid=1%7CcIsVF_3vqSIk4XErhPB0H2VaTxT0tdsTMRbMjrJOPN8%7C1624806049%7C08ce7dd6f7d20506a41ba0a331ef96a6505d96731e6ad9f6c8c709f53f227ab1",
 	}
 
-	client := resty.New()
+	client := newClient()
 	res, err := client.R().
 		SetHeaders(headers).
 		Get(reqUrl)

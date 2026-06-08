@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/tidwall/gjson"
 )
 
@@ -30,7 +29,7 @@ func (d douPai) parseVideoID(videoId string) (*VideoParseInfo, error) {
 		HttpHeaderUserAgent: DefaultUserAgent,
 	}
 
-	client := resty.New()
+	client := newClient()
 	res, err := client.R().
 		SetHeaders(headers).
 		Get(reqUrl)

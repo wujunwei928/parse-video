@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/tidwall/gjson"
 )
 
@@ -20,7 +19,7 @@ func (p piPiGaoXiao) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	}
 	postData := "{\"pid\":" + videoId + ",\"type\":\"post\",\"mid\":null}"
 
-	client := resty.New()
+	client := newClient()
 	res, err := client.R().
 		SetHeaders(headers).
 		SetBody([]byte(postData)).
