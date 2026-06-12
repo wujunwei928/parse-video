@@ -1,0 +1,330 @@
+    /* Zaha Hadid 流动几何主题 */
+    body.theme-hadid {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        color: #ffffff;
+        font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+
+    body.theme-hadid::before {
+        background:
+            linear-gradient(45deg, transparent 30%, rgba(102, 126, 234, 0.15) 50%, transparent 70%),
+            linear-gradient(-45deg, transparent 30%, rgba(118, 75, 162, 0.1) 50%, transparent 70%),
+            radial-gradient(circle at 20% 80%, rgba(102, 126, 234, 0.12) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(118, 75, 162, 0.08) 0%, transparent 50%);
+        background-size: 300% 300%, 200% 200%, 150% 150%, 100% 100%;
+        animation: hadidFlow 15s ease-in-out infinite;
+    }
+
+    @keyframes hadidFlow {
+        0% { background-position: 0% 0%, 100% 100%, 20% 80%, 80% 20%; }
+        25% { background-position: 100% 0%, 0% 100%, 80% 20%, 20% 80%; }
+        50% { background-position: 100% 100%, 0% 0%, 50% 50%, 50% 50%; }
+        75% { background-position: 0% 100%, 100% 0%, 80% 80%, 20% 20%; }
+        100% { background-position: 0% 0%, 100% 100%, 20% 80%, 80% 20%; }
+    }
+
+    body.theme-hadid .mdui-card {
+        background: rgba(26, 26, 46, 0.85);
+        backdrop-filter: blur(15px);
+        border: 2px solid rgba(102, 126, 234, 0.3);
+        border-radius: 0 15px 15px 0;
+        clip-path: polygon(0 0, 100% 0, 100% 95%, 95% 100%, 0 100%);
+        opacity: 1;
+        box-shadow:
+            0 8px 32px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(102, 126, 234, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        position: relative;
+        overflow: hidden;
+        padding: 1.5em;
+    }
+
+    /* Hadid主题紧凑布局 - 添加容器样式 */
+    body.theme-hadid .mdui-container {
+        max-width: 900px;
+        margin: 2em auto;
+        padding: 0 20px;
+    }
+
+    body.theme-hadid .mdui-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+            45deg,
+            transparent 30%,
+            rgba(102, 126, 234, 0.03) 50%,
+            transparent 70%
+        );
+        animation: hadidCardFlow 20s linear infinite;
+        pointer-events: none;
+    }
+
+    @keyframes hadidCardFlow {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    body.theme-hadid .mdui-btn {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: 2px solid rgba(102, 126, 234, 0.5);
+        border-radius: 0 25px 25px 0;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        clip-path: polygon(5% 0%, 100% 0%, 95% 100%, 0% 100%);
+        transition: all 0.3s ease;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    body.theme-hadid .mdui-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s ease;
+    }
+
+    body.theme-hadid .mdui-btn:hover {
+        transform: translateY(-2px) translateX(2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        background: linear-gradient(135deg, #764ba2, #667eea);
+        border-color: rgba(118, 75, 162, 0.7);
+    }
+
+    body.theme-hadid .mdui-btn:hover::before {
+        left: 100%;
+    }
+
+    body.theme-hadid .mdui-textfield-input {
+        background: rgba(26, 26, 46, 0.7);
+        border: 2px solid rgba(102, 126, 234, 0.4);
+        border-radius: 0 20px 20px 0;
+        color: #ffffff;
+        backdrop-filter: blur(10px);
+        font-weight: 500;
+        transition: all 0.3s ease;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    body.theme-hadid .mdui-textfield-input:focus {
+        background: rgba(26, 26, 46, 0.9);
+        border-color: rgba(102, 126, 234, 0.8);
+        box-shadow:
+            0 0 0 3px rgba(102, 126, 234, 0.2),
+            inset 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    body.theme-hadid .mdui-textfield-input::placeholder {
+        color: rgba(255, 255, 255, 0.6);
+        font-style: italic;
+    }
+
+    body.theme-hadid h1, body.theme-hadid h2, body.theme-hadid h3 {
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: #ffffff;
+        text-shadow:
+            0 2px 4px rgba(0,0,0,0.5),
+            0 0 20px rgba(102, 126, 234, 0.3);
+        margin-bottom: 1em;
+    }
+
+    body.theme-hadid h1 {
+        font-size: 2.2rem;
+        background: linear-gradient(45deg, #ffffff, #667eea, #764ba2);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-size: 200% 200%;
+        animation: hadidTextGradient 8s ease-in-out infinite;
+    }
+
+    @keyframes hadidTextGradient {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+    }
+
+    body.theme-hadid p {
+        color: rgba(255, 255, 255, 0.9);
+        line-height: 1.5;
+        font-weight: 400;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        margin-bottom: 1em;
+    }
+
+    body.theme-hadid strong {
+        color: #667eea;
+        font-weight: 700;
+        text-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+    }
+
+    body.theme-hadid .mdui-img-circle {
+        border: 3px solid rgba(102, 126, 234, 0.5);
+        box-shadow:
+            0 0 30px rgba(102, 126, 234, 0.4),
+            0 8px 16px rgba(0,0,0,0.3);
+    }
+
+    body.theme-hadid .down {
+        margin-top: 1.5em;
+        padding-top: 1.5em;
+        border-top: 2px solid rgba(102, 126, 234, 0.3);
+    }
+
+    body.theme-hadid .down .mdui-btn {
+        margin: 0.5em;
+        min-width: 140px;
+        position: relative;
+    }
+
+    body.theme-hadid .down .mdui-btn::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: 0 15px 15px 0;
+        border-color: transparent #667eea transparent transparent;
+        filter: drop-shadow(-2px 2px 3px rgba(0,0,0,0.3));
+    }
+
+    /* 解析结果区域优化 - Zaha Hadid主题 */
+    body.theme-hadid .down {
+        background: rgba(26, 26, 46, 0.6);
+        border: 1px solid rgba(102, 126, 234, 0.3);
+        border-radius: 12px;
+        padding: 1.2em;
+        margin-top: 1.5em;
+        backdrop-filter: blur(10px);
+        box-shadow:
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    body.theme-hadid .down h4 {
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 1.1rem;
+        text-shadow:
+            0 2px 4px rgba(0,0,0,0.5),
+            0 0 15px rgba(102, 126, 234, 0.4);
+        margin-bottom: 1em;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        background: linear-gradient(45deg, #ffffff, #667eea);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-size: 150% 150%;
+        animation: hadidTextGradient 6s ease-in-out infinite;
+    }
+
+    body.theme-hadid .down .mdui-btn {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.8), rgba(118, 75, 162, 0.8));
+        color: #ffffff;
+        border: 2px solid rgba(102, 126, 234, 0.6);
+        font-weight: 600;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+        position: relative;
+        backdrop-filter: blur(5px);
+        transition: all 0.3s ease;
+    }
+
+    body.theme-hadid .down .mdui-btn:hover {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.95), rgba(118, 75, 162, 0.95));
+        border-color: rgba(102, 126, 234, 0.9);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    }
+
+    /* 图片展示区域优化 */
+    body.theme-hadid .down div[style*="display: inline-block"] {
+        background: rgba(26, 26, 46, 0.4);
+        border: 1px solid rgba(102, 126, 234, 0.4);
+        border-radius: 8px;
+        padding: 0.8em;
+        margin: 0.8em;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(5px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    body.theme-hadid .down div[style*="display: inline-block"]:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        border-color: rgba(102, 126, 234, 0.7);
+    }
+
+    body.theme-hadid .down img {
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease;
+        border: 2px solid rgba(102, 126, 234, 0.3);
+    }
+
+    body.theme-hadid .down img:hover {
+        transform: scale(1.02);
+        border-color: rgba(102, 126, 234, 0.6);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    /* 图集标题特殊样式 */
+    body.theme-hadid .down h4:first-of-type {
+        position: relative;
+        padding-left: 20px;
+    }
+
+    body.theme-hadid .down h4:first-of-type::before {
+        content: '◆';
+        position: absolute;
+        left: 0;
+        color: #667eea;
+        font-size: 1.2em;
+        animation: hadidPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes hadidPulse {
+        0%, 100% { opacity: 0.6; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.1); }
+    }
+
+    /* 错误提示优化 */
+    body.theme-hadid .mdui-snackbar {
+        background: rgba(26, 26, 46, 0.95) !important;
+        color: white !important;
+        border: 1px solid rgba(102, 126, 234, 0.5) !important;
+        backdrop-filter: blur(10px) !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
+    }
+
+    /* 主题选择器适配 */
+    body.theme-hadid .theme-selector {
+        background: rgba(26, 26, 46, 0.95);
+        border: 1px solid rgba(102, 126, 234, 0.3);
+        color: white;
+        backdrop-filter: blur(10px);
+    }
+
+    body.theme-hadid .theme-option:hover {
+        background: rgba(102, 126, 234, 0.2);
+    }
+
+    body.theme-hadid .theme-option.active {
+        background: rgba(102, 126, 234, 0.3);
+    }
+

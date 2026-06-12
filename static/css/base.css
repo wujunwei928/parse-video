@@ -1,0 +1,235 @@
+    /* 主题选择器样式 */
+    .theme-selector {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        padding: 15px;
+        min-width: 200px;
+        transition: all 0.3s ease;
+    }
+
+    .theme-selector.collapsed {
+        min-width: auto;
+        padding: 10px;
+    }
+
+    .theme-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .theme-toggle:hover {
+        color: #666;
+    }
+
+    .theme-options {
+        margin-top: 12px;
+        display: none;
+    }
+
+    .theme-selector:not(.collapsed) .theme-options {
+        display: block;
+    }
+
+    .theme-option {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        margin: 4px 0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .theme-option:hover {
+        background: #f5f5f5;
+    }
+
+    .theme-option.active {
+        background: #e3f2fd;
+        font-weight: 500;
+    }
+
+    .theme-preview {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        margin-right: 10px;
+        border: 1px solid #ddd;
+    }
+
+    .theme-name {
+        flex: 1;
+    }
+
+    .theme-designer {
+        font-size: 11px;
+        opacity: 0.7;
+        margin-left: 5px;
+    }
+
+    /* 通用按钮样式 - 修复经典MDUI主题下解析按钮样式问题 */
+    .mdui-btn.mdui-color-theme-accent {
+        background: #ff4081 !important;
+        color: #ffffff !important;
+        border: none;
+        border-radius: 4px;
+        text-transform: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .mdui-btn.mdui-color-theme-accent:hover {
+        background: #f50057 !important;
+        box-shadow: 0 4px 8px rgba(255, 64, 129, 0.3);
+    }
+
+    .mdui-btn.mdui-color-red {
+        background: #f44336 !important;
+        color: #ffffff !important;
+        border: none;
+        border-radius: 4px;
+        text-transform: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .mdui-btn.mdui-color-red:hover {
+        background: #d32f2f !important;
+        box-shadow: 0 4px 8px rgba(244, 67, 54, 0.3);
+    }
+
+    /* 基础样式重置 */
+    body {
+        transition: all 0.5s ease;
+    }
+
+    body::before {
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        opacity: 0.3;
+        z-index: -1;
+        content: "";
+        position: fixed;
+    }
+
+    .mdui-textfield-input {
+        float: left;
+        width: 75%;
+        text-transform: none;
+        transition: all 0.3s ease;
+    }
+
+    .mdui-btn {
+        width: 12.5%;
+        transition: all 0.3s ease;
+    }
+
+    .mdui-container {
+        max-width: 900px;
+        margin-top: 6em;
+        margin-bottom: 4em;
+        transition: all 0.3s ease;
+    }
+
+    .mdui-btn, .mdui-fab {
+        min-width: 0px;
+    }
+
+    .mdui-card {
+        padding: 2em;
+        transition: all 0.5s ease;
+    }
+
+    .down .mdui-btn {
+        width: auto;
+        margin-left: 1.5em;
+        margin-bottom: 0.5em;
+    }
+
+    p {
+        opacity: 0.8;
+    }
+
+    .mdui-card-content {
+        padding: 16px 0 0 0;
+    }
+
+    .mdui-textfield.mdui-textfield-floating-label {
+        display: flex;
+        align-items: center;
+    }
+
+    .mdui-textfield-input, .mdui-btn {
+        margin-right: 8px;
+    }
+
+    /* 移动端适配 */
+    @media (max-width: 600px) {
+        .theme-selector {
+            top: 10px;
+            right: 10px;
+            min-width: 160px;
+            padding: 10px;
+        }
+
+        .mdui-container {
+            margin-top: 4em;
+            margin-bottom: 2em;
+        }
+
+        .mdui-card {
+            padding: 1em;
+        }
+
+        .mdui-textfield-input {
+            width: 100%;
+            float: none;
+        }
+
+        .mdui-btn {
+            width: 100%;
+            margin-top: 0.5em;
+        }
+
+        .down .mdui-btn {
+            width: 100%;
+            margin-left: 0;
+        }
+
+        .mdui-textfield.mdui-textfield-floating-label {
+            flex-direction: column;
+        }
+
+        .mdui-textfield-input, .mdui-btn {
+            margin-right: 0;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .theme-selector {
+            position: relative;
+            top: auto;
+            right: auto;
+            margin-bottom: 20px;
+        }
+    }
+
+    /* 主题切换动画 */
+    body {
+        transition: background 0.8s ease, color 0.8s ease;
+    }
+
+    .mdui-card, .mdui-btn, .mdui-textfield-input {
+        transition: all 0.5s ease;
+    }

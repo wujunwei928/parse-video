@@ -1,0 +1,505 @@
+    /* Dieter Rams 极简功能主义主题 - 灵感转译：Braun产品设计美学 + 参考Kusama/Hadid动态效果 */
+    body.theme-rams {
+        background: #f8f8f8;
+        color: #000000;
+        font-family: 'SF Pro Display', 'Helvetica Neue', 'Arial', sans-serif;
+        font-weight: 400;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overflow-x: hidden;
+    }
+
+    /* 借鉴Hadid主题的流动背景效果 - 极简版本 */
+    body.theme-rams::before {
+        background:
+            linear-gradient(45deg, rgba(0,122,255,0.02) 0%, transparent 50%),
+            linear-gradient(-45deg, rgba(255,149,0,0.01) 0%, transparent 50%);
+        background-size: 400px 400px;
+        animation: ramsSubtleFlow 20s ease-in-out infinite;
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    @keyframes ramsSubtleFlow {
+        0%, 100% { background-position: 0% 0%, 100% 100%; }
+        50% { background-position: 100% 0%, 0% 100%; }
+    }
+
+    /* Rams风格的主容器 - 体现产品感 */
+    body.theme-rams .mdui-container {
+        max-width: 95vw;
+        width: 100%;
+        min-width: 320px;
+        margin: 60px auto;
+        padding: 0 20px;
+        position: relative;
+        z-index: 2;
+    }
+
+    body.theme-rams .mdui-card {
+        background: #ffffff;
+        border: 1px solid #d1d1d1;
+        box-shadow:
+            0 4px 6px rgba(0,0,0,0.04),
+            0 1px 3px rgba(0,0,0,0.06);
+        opacity: 1;
+        border-radius: 12px;
+        padding: 40px;
+        margin: 0;
+        position: relative;
+        transition: all 0.3s ease;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* 借鉴Kusama主题的装饰元素 - 极简版本 */
+    body.theme-rams .mdui-card::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        background: linear-gradient(45deg, #007aff, #ff9500);
+        border-radius: 14px;
+        z-index: -1;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    body.theme-rams .mdui-card:hover::before {
+        opacity: 0.1;
+    }
+
+    /* Rams风格的头部设计 - 简洁的品牌展示 */
+    body.theme-rams .mdui-img-circle {
+        width: 60px !important;
+        height: 60px !important;
+        border: 2px solid #e5e5e7;
+        border-radius: 50%;
+        margin: 0 auto 30px auto;
+        display: block;
+        background: #ffffff;
+        padding: 4px;
+        box-shadow:
+            0 2px 8px rgba(0,0,0,0.08),
+            0 0 0 1px rgba(0,122,255,0.1);
+        transition: all 0.3s ease;
+    }
+
+    body.theme-rams .mdui-img-circle:hover {
+        transform: scale(1.05);
+        box-shadow:
+            0 4px 12px rgba(0,0,0,0.12),
+            0 0 0 3px rgba(0,122,255,0.1);
+    }
+
+    body.theme-rams h1 {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1d1d1f;
+        margin: 0 0 32px 0;
+        text-align: center;
+        letter-spacing: -0.6px;
+        line-height: 1.1;
+        position: relative;
+    }
+
+    /* 借鉴Vignelli主题的装饰线 */
+    body.theme-rams h1::after {
+        content: '';
+        position: absolute;
+        bottom: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 50px;
+        height: 3px;
+        background: linear-gradient(90deg, #007aff, #ff9500);
+        border-radius: 2px;
+    }
+
+    /* Rams风格的内容排版 */
+    body.theme-rams p {
+        color: #515154;
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 20px;
+        font-weight: 400;
+        position: relative;
+        z-index: 1;
+    }
+
+    body.theme-rams strong {
+        color: #1d1d1f;
+        font-weight: 700;
+        background: linear-gradient(45deg, rgba(0,122,255,0.1), rgba(255,149,0,0.1));
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+
+    body.theme-rams hr {
+        border: none;
+        border-top: 1px solid #d2d2d7;
+        margin: 32px 0;
+        position: relative;
+    }
+
+    body.theme-rams hr::before {
+        content: '';
+        position: absolute;
+        top: -1px;
+        left: 20%;
+        right: 20%;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #007aff, transparent);
+    }
+
+    /* Rams风格的按钮系统 - 借鉴Hadid主题的光效 */
+    body.theme-rams .mdui-btn {
+        background: #007aff;
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        text-transform: none;
+        font-weight: 600;
+        font-size: 17px;
+        padding: 16px 32px;
+        min-height: 52px;
+        letter-spacing: -0.3px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow:
+            0 4px 6px rgba(0,122,255,0.15),
+            0 1px 3px rgba(0,0,0,0.1);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* 借鉴Hadid主题的光波效果 */
+    body.theme-rams .mdui-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.6s ease;
+        z-index: 1;
+    }
+
+    body.theme-rams .mdui-btn:hover {
+        background: #0056cc;
+        box-shadow:
+            0 8px 12px rgba(0,122,255,0.25),
+            0 2px 4px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+
+    body.theme-rams .mdui-btn:hover::before {
+        left: 100%;
+    }
+
+    body.theme-rams .mdui-btn:active {
+        background: #004999;
+        transform: translateY(-1px);
+        box-shadow:
+            0 4px 6px rgba(0,122,255,0.2),
+            0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    /* 主操作按钮 - 黄色强调 */
+    body.theme-rams .mdui-btn.mdui-color-theme-accent {
+        background: linear-gradient(135deg, #ff9500, #ff8000);
+        box-shadow:
+            0 4px 6px rgba(255,149,0,0.15),
+            0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    body.theme-rams .mdui-btn.mdui-color-theme-accent:hover {
+        background: linear-gradient(135deg, #e6850e, #ff6b00);
+        box-shadow:
+            0 8px 12px rgba(255,149,0,0.25),
+            0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* 次要按钮 - 灰色调 */
+    body.theme-rams .mdui-btn.mdui-color-red {
+        background: linear-gradient(135deg, #8e8e93, #6d6d70);
+        box-shadow:
+            0 4px 6px rgba(142,142,147,0.15),
+            0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    body.theme-rams .mdui-btn.mdui-color-red:hover {
+        background: linear-gradient(135deg, #636366, #4a4a4d);
+        box-shadow:
+            0 8px 12px rgba(142,142,147,0.25),
+            0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* Rams风格的输入框设计 - 借鉴其他主题的焦点效果 */
+    body.theme-rams .mdui-textfield {
+        margin: 32px 0;
+        position: relative;
+    }
+
+    body.theme-rams .mdui-textfield-input {
+        border: 2px solid #d2d2d7;
+        border-radius: 12px;
+        background: #ffffff;
+        font-size: 17px;
+        padding: 16px 20px;
+        height: 52px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        color: #1d1d1f;
+        font-weight: 500;
+        box-shadow:
+            0 2px 4px rgba(0,0,0,0.04),
+            inset 0 1px 2px rgba(0,0,0,0.06);
+    }
+
+    body.theme-rams .mdui-textfield-input:focus {
+        border-color: #007aff;
+        outline: none;
+        box-shadow:
+            0 0 0 4px rgba(0,122,255,0.15),
+            0 4px 12px rgba(0,0,0,0.1),
+            inset 0 1px 2px rgba(0,0,0,0.06);
+        transform: translateY(-1px);
+        background: linear-gradient(to bottom, #ffffff, #fafbff);
+    }
+
+    body.theme-rams .mdui-textfield-input::placeholder {
+        color: #8e8e93;
+        font-weight: 400;
+        transition: opacity 0.3s ease;
+    }
+
+    body.theme-rams .mdui-textfield-input:focus::placeholder {
+        opacity: 0.7;
+    }
+
+    /* Rams风格的解析结果区域 */
+    body.theme-rams .down {
+        margin-top: 48px;
+        padding-top: 32px;
+        border-top: 2px solid #d2d2d7;
+        position: relative;
+    }
+
+    body.theme-rams .down::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 4px;
+        background: linear-gradient(90deg, #007aff, #ff9500);
+        border-radius: 2px;
+    }
+
+    body.theme-rams .down h4 {
+        font-size: 22px;
+        font-weight: 700;
+        color: #1d1d1f;
+        margin: 0 0 32px 0;
+        text-align: center;
+        letter-spacing: -0.3px;
+        position: relative;
+    }
+
+    body.theme-rams .down h4::after {
+        content: '';
+        position: absolute;
+        bottom: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 2px;
+        background: linear-gradient(90deg, #007aff, #ff9500);
+        border-radius: 1px;
+    }
+
+    body.theme-rams .down .mdui-btn {
+        margin: 10px;
+        min-width: 120px;
+        max-width: 160px;
+        font-size: 15px;
+        padding: 14px 24px;
+        min-height: 48px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* 图片展示区域 - 借鉴其他主题的悬停效果 */
+    body.theme-rams .down div[style*="display: inline-block"] {
+        margin: 16px;
+        padding: 20px;
+        border: 1px solid #e5e5e7;
+        border-radius: 16px;
+        background: #ffffff;
+        text-align: center;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    body.theme-rams .down div[style*="display: inline-block"]::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #007aff, #ff9500);
+        transform: translateY(-100%);
+        transition: transform 0.3s ease;
+    }
+
+    body.theme-rams .down div[style*="display: inline-block"]:hover {
+        background: linear-gradient(to bottom, #ffffff, #f8faff);
+        border-color: #007aff;
+        transform: translateY(-4px);
+        box-shadow:
+            0 12px 24px rgba(0,122,255,0.15),
+            0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    body.theme-rams .down div[style*="display: inline-block"]:hover::before {
+        transform: translateY(0);
+    }
+
+    body.theme-rams .down img {
+        border-radius: 12px;
+        border: 1px solid #e5e5e7;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+
+    body.theme-rams .down img:hover {
+        transform: scale(1.03);
+        box-shadow: 0 8px 16px rgba(0,122,255,0.2);
+        border-color: #007aff;
+    }
+
+    /* Rams风格的细节优化 */
+    body.theme-rams .mdui-textfield-error {
+        color: #ff3b30;
+        font-size: 14px;
+        margin-top: 8px;
+        font-weight: 500;
+        padding: 8px 12px;
+        background: rgba(255,59,48,0.1);
+        border-radius: 6px;
+        border-left: 3px solid #ff3b30;
+    }
+
+    /* 加载状态 - 借鉴其他主题的动画 */
+    body.theme-rams .loading {
+        color: #007aff;
+        font-style: italic;
+        position: relative;
+        display: inline-block;
+    }
+
+    body.theme-rams .loading::after {
+        content: '...';
+        animation: ramsLoading 1.5s infinite;
+    }
+
+    @keyframes ramsLoading {
+        0%, 60%, 100% { opacity: 1; }
+        30% { opacity: 0.3; }
+    }
+
+    /* Rams风格的响应式设计 */
+    @media (max-width: 768px) {
+        body.theme-rams .mdui-container {
+            margin: 40px 16px;
+            padding: 0;
+        }
+
+        body.theme-rams .mdui-card {
+            padding: 32px 24px;
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+        }
+
+        body.theme-rams h1 {
+            font-size: 24px;
+            margin-bottom: 32px;
+        }
+
+        body.theme-rams .mdui-btn {
+            width: 100%;
+            margin: 8px 0;
+            font-size: 17px;
+        }
+
+        body.theme-rams .mdui-textfield-input {
+            font-size: 16px; /* 防止iOS缩放 */
+        }
+    }
+
+    /* 暗色模式适配 */
+    @media (prefers-color-scheme: dark) {
+        body.theme-rams {
+            background: #000000;
+            color: #f5f5f7;
+        }
+
+        body.theme-rams .mdui-card {
+            background: #1c1c1e;
+            border-color: #38383a;
+        }
+
+        body.theme-rams .mdui-textfield-input {
+            background: #1c1c1e;
+            border-color: #38383a;
+            color: #f5f5f7;
+        }
+
+        body.theme-rams .mdui-textfield-input::placeholder {
+            color: #8e8e93;
+        }
+
+        body.theme-rams h1,
+        body.theme-rams strong {
+            color: #f5f5f7;
+        }
+
+        body.theme-rams p {
+            color: #a1a1a6;
+        }
+
+        body.theme-rams .mdui-img-circle {
+            border-color: #38383a;
+            background: #2c2c2e;
+        }
+
+        body.theme-rams .down {
+            border-color: #38383a;
+        }
+
+        body.theme-rams .down div[style*="display: inline-block"] {
+            background: #2c2c2e;
+            border-color: #38383a;
+        }
+
+        body.theme-rams .down div[style*="display: inline-block"]:hover {
+            background: #3a3a3c;
+        }
+
+        body.theme-rams hr {
+            border-color: #38383a;
+        }
+    }
+

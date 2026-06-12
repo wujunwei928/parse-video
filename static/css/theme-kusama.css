@@ -1,0 +1,182 @@
+    /* Yayoi Kusama 波点艺术主题 */
+    body.theme-kusama {
+        background: #fff0f5;
+        color: #d81b60;
+        font-family: 'Georgia', serif;
+        overflow-x: hidden;
+    }
+
+    body.theme-kusama::before {
+        background-image:
+            radial-gradient(circle at 20% 80%, rgba(216, 27, 96, 0.08) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(233, 30, 99, 0.08) 0%, transparent 50%),
+            radial-gradient(circle at 40% 40%, rgba(240, 98, 146, 0.08) 0%, transparent 50%),
+            radial-gradient(circle at 60% 70%, rgba(216, 27, 96, 0.06) 0%, transparent 40%),
+            radial-gradient(circle at 30% 30%, rgba(233, 30, 99, 0.06) 0%, transparent 40%);
+        animation: kusamaFloat 25s ease-in-out infinite;
+    }
+
+    @keyframes kusamaFloat {
+        0%, 100% { transform: translate(0, 0) rotate(0deg); }
+        25% { transform: translate(-15px, -15px) rotate(90deg); }
+        50% { transform: translate(15px, -10px) rotate(180deg); }
+        75% { transform: translate(-10px, 15px) rotate(270deg); }
+    }
+
+    body.theme-kusama .mdui-card {
+        background: white;
+        border: 3px dotted #d81b60;
+        border-radius: 20px;
+        padding: 2.5em;
+        margin: 2em auto;
+        max-width: 95%;
+        opacity: 0.95;
+        box-shadow: 0 0 30px rgba(216, 27, 96, 0.2);
+        position: relative;
+        overflow: visible;
+    }
+
+    body.theme-kusama .mdui-card::before,
+    body.theme-kusama .mdui-card::after {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        background: radial-gradient(circle, #d81b60 0%, #ff69b4 50%, transparent 70%);
+        border-radius: 50%;
+        animation: kusamaPulse 3s ease-in-out infinite;
+    }
+
+    body.theme-kusama .mdui-card::before {
+        top: -10px;
+        left: 20px;
+        animation-delay: 0s;
+    }
+
+    body.theme-kusama .mdui-card::after {
+        bottom: -10px;
+        right: 20px;
+        animation-delay: 1.5s;
+    }
+
+    @keyframes kusamaPulse {
+        0%, 100% { transform: scale(1); opacity: 0.8; }
+        50% { transform: scale(1.2); opacity: 1; }
+    }
+
+    body.theme-kusama .mdui-btn {
+        background: linear-gradient(45deg, #d81b60, #ff69b4);
+        color: white;
+        border-radius: 25px;
+        border: 2px solid transparent;
+        font-weight: 600;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    body.theme-kusama .mdui-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(216, 27, 96, 0.4);
+        background: linear-gradient(45deg, #ff69b4, #d81b60);
+    }
+
+    body.theme-kusama .mdui-btn::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+        transform: translate(-50%, -50%);
+        transition: width 0.4s, height 0.4s;
+    }
+
+    body.theme-kusama .mdui-btn:hover::before {
+        width: 200px;
+        height: 200px;
+    }
+
+    body.theme-kusama .mdui-textfield-input {
+        border: 2px dotted #d81b60;
+        border-radius: 20px;
+        background: rgba(255, 240, 245, 0.9);
+        color: #d81b60;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        box-shadow: inset 0 2px 4px rgba(216, 27, 96, 0.1);
+    }
+
+    body.theme-kusama .mdui-textfield-input:focus {
+        border-color: #ff69b4;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.2), inset 0 2px 4px rgba(216, 27, 96, 0.1);
+    }
+
+    body.theme-kusama .mdui-textfield-input::placeholder {
+        color: rgba(216, 27, 96, 0.6);
+    }
+
+    /* 波点主题的容器和布局调整 */
+    body.theme-kusama .mdui-container {
+        max-width: 1000px;
+        margin-top: 5em;
+        margin-bottom: 3em;
+    }
+
+    body.theme-kusama h1 {
+        color: #d81b60;
+        font-weight: 600;
+        text-shadow: 2px 2px 4px rgba(216, 27, 96, 0.1);
+        margin-bottom: 1.5em;
+    }
+
+    body.theme-kusama .mdui-img-circle {
+        border: 3px solid #d81b60;
+        box-shadow: 0 0 20px rgba(216, 27, 96, 0.3);
+    }
+
+    body.theme-kusama p {
+        line-height: 1.8;
+        opacity: 0.9;
+    }
+
+    /* 为波点艺术主题添加图片悬浮动画 */
+    body.theme-kusama .down img:hover {
+        transform: scale(1.08) rotate(5deg);
+        box-shadow: 0 8px 20px rgba(216, 27, 96, 0.3);
+        filter: brightness(1.1);
+        transition: all 0.3s ease;
+    }
+
+    /* 波点艺术主题图片悬浮时的额外装饰 */
+    body.theme-kusama .down div[style*="display: inline-block"]:hover img::after {
+        content: '◈';
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        color: #d81b60;
+        font-size: 24px;
+        text-shadow: 0 2px 4px rgba(216, 27, 96, 0.3);
+        animation: kusamaPulse 2s ease-in-out infinite;
+    }
+
+    body.theme-kusama strong {
+        color: #d81b60;
+        font-weight: 700;
+    }
+
+    body.theme-kusama .down {
+        margin-top: 2em;
+        padding-top: 1.5em;
+        border-top: 2px dotted #d81b60;
+    }
+
+    body.theme-kusama .down .mdui-btn {
+        margin: 0.5em;
+        min-width: 120px;
+    }
+

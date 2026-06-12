@@ -1,0 +1,53 @@
+    /* 原始主题 - MDUI风格 */
+    .theme-original {
+        background-image: linear-gradient(135deg, #CE9FFC 10%, #7367F0 100%);
+        opacity: 0.3;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: -1;
+        content: "";
+    }
+
+    body.theme-original::before {
+        background-image: linear-gradient(135deg, #CE9FFC 10%, #7367F0 100%);
+        opacity: 0.3;
+        z-index: -1;
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+    }
+
+    .theme-original ::selection {
+        background: rgba(0, 149, 255, .1);
+    }
+
+    /* 为经典MDUI主题添加图片悬浮效果 - 增强优先级 */
+    body.theme-original .down div[style*="display: inline-block"] img {
+        transition: all 0.3s ease !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+        border-radius: 8px !important;
+        cursor: pointer !important;
+        border: 2px solid transparent !important;
+    }
+
+    body.theme-original .down div[style*="display: inline-block"] img:hover {
+        transform: scale(1.08) !important;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25) !important;
+        border-color: #ff4081 !important;
+        filter: brightness(1.05) !important;
+    }
+
+    /* 确保覆盖内联样式 */
+    body.theme-original .down img[src]:hover {
+        transform: scale(1.08) !important;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25) !important;
+        border-color: #ff4081 !important;
+        filter: brightness(1.05) !important;
+    }
+

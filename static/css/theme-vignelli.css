@@ -1,0 +1,689 @@
+    /* Massimo Vignelli 现代网格主题 - 灵感转译：纽约地铁图系统 + 参考其他主题效果 */
+    body.theme-vignelli {
+        background: #ffffff;
+        color: #000000;
+        font-family: 'Helvetica Neue Bold', 'Arial Black', sans-serif;
+        font-weight: 700;
+        overflow-x: hidden;
+        line-height: 1.4;
+    }
+
+    /* 借鉴Hadid主题的流动背景 - 网格版 */
+    body.theme-vignelli::before {
+        background-image:
+            linear-gradient(90deg, #ff0000 1px, transparent 1px),
+            linear-gradient(180deg, #ff0000 1px, transparent 1px),
+            linear-gradient(90deg, #0066cc 2px, transparent 2px),
+            linear-gradient(180deg, #0066cc 2px, transparent 2px),
+            linear-gradient(45deg, rgba(255,0,0,0.01) 0%, transparent 50%),
+            linear-gradient(-45deg, rgba(0,102,204,0.01) 0%, transparent 50%);
+        background-size: 80px 80px, 160px 160px, 300px 300px, 400px 400px;
+        background-position: -1px -1px;
+        animation: vignelliDynamicGrid 15s ease-in-out infinite;
+        opacity: 0.03;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        content: '';
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    @keyframes vignelliDynamicGrid {
+        0%, 100% { background-position: 0% 0%, 100% 100%, 0% 0%, 100% 100%; }
+        50% { background-position: 100% 0%, 0% 100%, 100% 0%, 0% 100%; }
+    }
+
+    body.theme-vignelli .mdui-container {
+        position: relative;
+        z-index: 2;
+        max-width: 90vw;
+        width: 100%;
+        min-width: 320px;
+        margin: 0 auto;
+        padding: 40px 30px;
+    }
+
+    body.theme-vignelli .mdui-card {
+        background: #ffffff;
+        border: none;
+        box-shadow: none;
+        opacity: 1;
+        border-radius: 0;
+        padding: 15px;
+        margin: 0 auto;
+        position: relative;
+        max-width: 1000px;
+    }
+
+    /* 借鉴Kusama主题的装饰元素 */
+    body.theme-vignelli .mdui-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 6px;
+        height: 100%;
+        background: linear-gradient(to bottom, #ff0000, #0066cc);
+        z-index: 0;
+    }
+
+    body.theme-vignelli .mdui-card::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 6px;
+        height: 100%;
+        background: linear-gradient(to bottom, #0066cc, #ff0000);
+        z-index: 0;
+    }
+
+    /* Vignelli风格的严格网格布局 */
+    body.theme-vignelli .mdui-card > * {
+        margin-bottom: 25px;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* 品牌标识 - 借鉴Hadid主题的动态效果 */
+    body.theme-vignelli .mdui-img-circle {
+        width: 100px !important;
+        height: 100px !important;
+        border: 6px solid #000000;
+        margin: 0 auto 25px auto;
+        display: block;
+        background: linear-gradient(45deg, #ff0000, #0066cc);
+        padding: 5px;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        animation: vignelliLogoRotate 20s linear infinite;
+    }
+
+    @keyframes vignelliLogoRotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    body.theme-vignelli .mdui-img-circle:hover {
+        animation-play-state: paused;
+        transform: scale(1.1) rotate(10deg);
+        box-shadow: 0 0 30px rgba(255,0,0,0.3);
+    }
+
+    /* Vignelli风格的标题系统 - 借鉴动态效果 */
+    body.theme-vignelli h1 {
+        font-size: 42px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: -3px;
+        line-height: 0.9;
+        color: #000000;
+        margin: 0 0 25px 0;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    body.theme-vignelli h1::after {
+        content: '';
+        position: absolute;
+        bottom: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 8px;
+        background: linear-gradient(90deg, #ff0000, #0066cc, #ff0000);
+        background-size: 200% 100%;
+        animation: vignelliGradient 8s ease-in-out infinite;
+        border-radius: 4px;
+    }
+
+    @keyframes vignelliGradient {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+    }
+
+    /* Vignelli风格的正文排版 */
+    body.theme-vignelli p {
+        font-size: 18px;
+        line-height: 1.6;
+        color: #333333;
+        margin: 0 0 20px 0;
+        max-width: 1000px;
+        margin-left: auto;
+        margin-right: auto;
+        font-weight: 500;
+        text-align: justify;
+        columns: 2;
+        column-gap: 60px;
+        position: relative;
+    }
+
+    /* 修复mdui-typo下的文字显示为单列 */
+    body.theme-vignelli .mdui-typo p {
+        columns: 1;
+        text-align: left;
+        max-width: 100%;
+        column-gap: 0;
+    }
+
+    /* 借鉴Kusama主题的强调效果 */
+    body.theme-vignelli strong {
+        font-weight: 900;
+        color: #000000;
+        background: linear-gradient(45deg, #ffc72c, #ff9500);
+        padding: 2px 8px;
+        border-radius: 3px;
+        position: relative;
+        animation: vignelliPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes vignelliPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    body.theme-vignelli hr {
+        border: none;
+        border-top: 4px solid #000000;
+        margin: 30px 0;
+        position: relative;
+        overflow: hidden;
+    }
+
+    body.theme-vignelli hr::before {
+        content: '◆';
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #ffffff;
+        padding: 0 20px;
+        font-size: 28px;
+        color: #ff0000;
+        animation: vignelliSymbol 2s ease-in-out infinite;
+    }
+
+    @keyframes vignelliSymbol {
+        0%, 100% { transform: translateX(-50%) scale(1); }
+        50% { transform: translateX(-50%) scale(1.2); }
+    }
+
+    /* Vignelli风格的按钮系统 - 借鉴Hadid主题的光效 */
+    body.theme-vignelli .mdui-btn {
+        background: #000000;
+        color: #ffffff;
+        border: none;
+        border-radius: 0;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 13px;
+        padding: 16px 32px;
+        min-height: 50px;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        margin: 12px;
+        position: relative;
+        overflow: hidden;
+        clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* 借鉴Hadid主题的光波效果 */
+    body.theme-vignelli .mdui-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 0;
+    }
+
+    body.theme-vignelli .mdui-btn::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: 8px 0 8px 16px;
+        border-color: transparent transparent transparent #ffffff;
+        transition: all 0.4s ease;
+        z-index: 1;
+    }
+
+    body.theme-vignelli .mdui-btn span {
+        position: relative;
+        z-index: 2;
+        margin-right: 15px;
+    }
+
+    body.theme-vignelli .mdui-btn:hover {
+        transform: translateX(15px);
+        box-shadow: 10px 10px 0 #000000;
+        background: linear-gradient(45deg, #ff0000, #0066cc);
+    }
+
+    body.theme-vignelli .mdui-btn:hover::before {
+        left: 100%;
+    }
+
+    body.theme-vignelli .mdui-btn:hover::after {
+        right: 10px;
+        border-color: transparent transparent transparent rgba(255,255,255,0.8);
+        transform: translateY(-50%) translateX(10px);
+    }
+
+    /* 地铁线色彩系统 - 增强效果 */
+    body.theme-vignelli .mdui-btn.mdui-color-theme-accent {
+        background: linear-gradient(45deg, #ff0000, #ff3333);
+        clip-path: polygon(20px 0, 100% 0, 100% 100%, 0 100%, 0 50%);
+        box-shadow: 5px 5px 0 #ff0000;
+    }
+
+    body.theme-vignelli .mdui-btn.mdui-color-theme-accent::after {
+        left: 10px;
+        right: auto;
+        transform: translateY(-50%) rotate(180deg);
+    }
+
+    body.theme-vignelli .mdui-btn.mdui-color-theme-accent span {
+        margin-left: 20px;
+        margin-right: 0;
+    }
+
+    body.theme-vignelli .mdui-btn.mdui-color-theme-accent:hover {
+        background: linear-gradient(45deg, #ff3333, #ff6666);
+        box-shadow: 15px 15px 0 #ff0000;
+    }
+
+    body.theme-vignelli .mdui-btn.mdui-color-red {
+        background: linear-gradient(45deg, #0066cc, #3399ff);
+        clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 90%, calc(100% - 10px) 100%, 0 100%);
+        box-shadow: 5px 5px 0 #0066cc;
+    }
+
+    body.theme-vignelli .mdui-btn.mdui-color-red:hover {
+        background: linear-gradient(45deg, #3399ff, #66bbff);
+        box-shadow: 15px 15px 0 #0066cc;
+    }
+
+    /* Vignelli风格的输入框 - 借鉴其他主题的效果 */
+    body.theme-vignelli .mdui-textfield {
+        position: relative;
+        margin: 25px 0;
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    body.theme-vignelli .mdui-textfield::before {
+        content: 'URL INPUT';
+        position: absolute;
+        top: -30px;
+        left: 0;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 2px;
+        color: #ff0000;
+        animation: vignelliBlink 2s ease-in-out infinite;
+    }
+
+    @keyframes vignelliBlink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    body.theme-vignelli .mdui-textfield-input {
+        border: none;
+        border-bottom: 3px solid #000000;
+        border-radius: 0;
+        background: transparent;
+        font-size: 20px;
+        font-weight: 700;
+        padding: 16px 0;
+        height: auto;
+        color: #000000;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        letter-spacing: 0.5px;
+        position: relative;
+    }
+
+    /* 借鉴其他主题的焦点效果 */
+    body.theme-vignelli .mdui-textfield-input::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #ff0000, #0066cc);
+        transition: width 0.4s ease;
+    }
+
+    body.theme-vignelli .mdui-textfield-input:focus {
+        outline: none;
+        border-bottom-width: 8px;
+        border-color: #ff0000;
+        margin-top: 4px;
+        background: linear-gradient(to bottom, rgba(255,0,0,0.05), transparent);
+        color: #ff0000;
+    }
+
+    body.theme-vignelli .mdui-textfield-input:focus::after {
+        width: 100%;
+    }
+
+    body.theme-vignelli .mdui-textfield-input::placeholder {
+        color: #999999;
+        font-style: italic;
+        font-weight: 400;
+        transition: all 0.3s ease;
+    }
+
+    body.theme-vignelli .mdui-textfield-input:focus::placeholder {
+        color: #ff6666;
+        font-style: normal;
+    }
+
+    /* Vignelli风格的解析结果区域 */
+    body.theme-vignelli .down {
+        border-top: 3px solid #000000;
+        padding-top: 30px;
+        margin-top: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    body.theme-vignelli .down::before {
+        content: 'PARSED RESULTS';
+        position: absolute;
+        top: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #ffffff;
+        padding: 0 40px;
+        font-size: 14px;
+        font-weight: 900;
+        letter-spacing: 4px;
+        color: #ff0000;
+        animation: vignelliBlink 3s ease-in-out infinite;
+    }
+
+    body.theme-vignelli .down::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #ff0000, #0066cc, #ff0000);
+        animation: vignelliGradient 6s ease-in-out infinite;
+    }
+
+    body.theme-vignelli .down h4 {
+        font-size: 22px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: -1px;
+        color: #000000;
+        margin: 0 0 25px 0;
+        text-align: center;
+        position: relative;
+    }
+
+    body.theme-vignelli .down h4::after {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 3px;
+        background: linear-gradient(90deg, #0066cc, #ff0000);
+        border-radius: 2px;
+    }
+
+    body.theme-vignelli .down div[style*="display: inline-block"] {
+        display: inline-block;
+        margin: 15px;
+        padding: 0;
+        border: 4px solid #000000;
+        background: #ffffff;
+        text-align: center;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px));
+    }
+
+    /* 借鉴Hadid主题的内部光效 */
+    body.theme-vignelli .down div[style*="display: inline-block"]::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, transparent 30%, rgba(255,0,0,0.05) 50%, transparent 70%);
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        animation: vignelliCardFlow 8s linear infinite;
+    }
+
+    @keyframes vignelliCardFlow {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    body.theme-vignelli .down div[style*="display: inline-block"]:hover {
+        background: linear-gradient(45deg, #ff0000, #0066cc);
+        transform: translateY(-15px) rotate(3deg);
+        box-shadow: 15px 15px 0 #000000;
+    }
+
+    body.theme-vignelli .down div[style*="display: inline-block"]:hover::before {
+        opacity: 1;
+    }
+
+    body.theme-vignelli .down div[style*="display: inline-block"]:hover img {
+        filter: invert(1) hue-rotate(180deg);
+    }
+
+    body.theme-vignelli .down img {
+        width: 240px !important;
+        height: auto;
+        border: none;
+        margin: 0;
+        padding: 24px;
+        transition: all 0.4s ease;
+        display: block;
+        position: relative;
+        z-index: 1;
+    }
+
+    body.theme-vignelli .down .mdui-btn {
+        margin: 20px;
+        min-width: 120px;
+        max-width: 160px;
+        font-size: 12px;
+        padding: 18px 24px;
+        min-height: 52px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+        clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%);
+    }
+
+    /* 为下载区域的按钮添加箭头效果 */
+    body.theme-vignelli .down .mdui-btn::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: 8px 0 8px 16px;
+        border-color: transparent transparent transparent #ffffff;
+        transition: all 0.4s ease;
+        z-index: 1;
+    }
+
+    body.theme-vignelli .down .mdui-btn span {
+        position: relative;
+        z-index: 2;
+        margin-right: 15px;
+    }
+
+    /* 下载区域按钮悬浮效果 */
+    body.theme-vignelli .down .mdui-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 0;
+    }
+
+    body.theme-vignelli .down .mdui-btn:hover {
+        transform: translateX(15px);
+        box-shadow: 10px 10px 0 #000000;
+        background: linear-gradient(45deg, #ff0000, #0066cc);
+    }
+
+    body.theme-vignelli .down .mdui-btn:hover::before {
+        left: 100%;
+    }
+
+    body.theme-vignelli .down .mdui-btn:hover::after {
+        right: 10px;
+        border-color: transparent transparent transparent rgba(255,255,255,0.8);
+        transform: translateY(-50%) translateX(10px);
+    }
+
+    /* Vignelli颜色系统的应用 */
+    body.theme-vignelli .vignelli-red { color: #ff0000; }
+    body.theme-vignelli .vignelli-blue { color: #0066cc; }
+    body.theme-vignelli .vignelli-yellow { color: #ffc72c; }
+    body.theme-vignelli .vignelli-green { color: #00a652; }
+    body.theme-vignelli .vignelli-orange { color: #ff6600; }
+    body.theme-vignelli .vignelli-purple { color: #8b5fbf; }
+
+    /* Vignelli风格的装饰元素 */
+    body.theme-vignelli .vignelli-corner {
+        position: fixed;
+        width: 100px;
+        height: 100px;
+        background: #ff0000;
+        z-index: 1000;
+    }
+
+    body.theme-vignelli .vignelli-corner.top-left {
+        top: 0;
+        left: 0;
+        clip-path: polygon(0 0, 100% 0, 0 100%);
+    }
+
+    body.theme-vignelli .vignelli-corner.top-right {
+        top: 0;
+        right: 0;
+        clip-path: polygon(0 0, 100% 0, 100% 100%);
+        background: #0066cc;
+    }
+
+    body.theme-vignelli .vignelli-corner.bottom-left {
+        bottom: 0;
+        left: 0;
+        clip-path: polygon(0 0, 0 100%, 100% 100%);
+        background: #0066cc;
+    }
+
+    body.theme-vignelli .vignelli-corner.bottom-right {
+        bottom: 0;
+        right: 0;
+        clip-path: polygon(100% 0, 100% 100%, 0 100%);
+        background: #ff0000;
+    }
+
+    /* 响应式设计 */
+    @media (max-width: 1200px) {
+        body.theme-vignelli .mdui-container {
+            padding: 60px 40px;
+            max-width: 95vw;
+        }
+
+        body.theme-vignelli .mdui-typo p {
+            columns: 1;
+            max-width: 700px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        body.theme-vignelli .mdui-container {
+            padding: 40px 20px;
+            max-width: 98vw;
+        }
+
+        body.theme-vignelli h1 {
+            font-size: 36px;
+            letter-spacing: -1px;
+        }
+
+        body.theme-vignelli .mdui-img-circle {
+            width: 90px !important;
+            height: 90px !important;
+            border-width: 6px;
+            border-radius: 50% !important;
+            object-fit: cover;
+        }
+
+        body.theme-vignelli .mdui-textfield-input {
+            font-size: 18px;
+        }
+
+        body.theme-vignelli .down div[style*="display: inline-block"] {
+            display: block;
+            margin: 20px auto;
+            max-width: 300px;
+        }
+
+        body.theme-vignelli .down img {
+            width: 100% !important;
+            max-width: 260px;
+        }
+
+        body.theme-vignelli .mdui-btn {
+            width: 100%;
+            max-width: 300px;
+            margin: 10px auto;
+            display: block;
+        }
+
+        /* 隐藏装饰角落 */
+        body.theme-vignelli .vignelli-corner {
+            display: none;
+        }
+    }
+
+    /* 添加数据属性支持 */
+    body.theme-vignelli .mdui-btn[data-text]::after {
+        content: attr(data-text);
+    }
+
