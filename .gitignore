@@ -25,3 +25,5 @@ package.json
 package-lock.json
 tmp/
 .worktrees/
+# Visual Companion mockups
+.superpowers/
