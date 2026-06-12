@@ -33,6 +33,12 @@ func SetTemplates(f fs.FS) {
 	templateFS = f
 }
 
+var staticFS fs.FS
+
+func SetStatic(f fs.FS) {
+	staticFS = f
+}
+
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)

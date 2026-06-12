@@ -46,6 +46,9 @@ func runServe(cmd *cobra.Command, args []string) error {
 	r.Use(rateLimitMiddleware(newIPRateLimiter(rateLimitRPM), "/api/v1/health"))
 	r.Use(basicAuthMiddleware(username, password, exemptPaths))
 
+	// 静态资源（CSS/JS/favicon）
+	registerStaticRoutes(r)
+
 	// Web UI
 	if templateFS != nil {
 		tmpl, err := template.ParseFS(templateFS, "*.html")
@@ -101,6 +104,14 @@ func runServe(cmd *cobra.Command, args []string) error {
 	}
 	log.Println("Server exiting")
 	return nil
+}
+
+// registerStaticRoutes 挂载静态资源路由；staticFS 为空时安全跳过。
+func registerStaticRoutes(r *gin.Engine) {
+	if staticFS == nil {
+		return
+	}
+	r.StaticFS("/static", http.FS(staticFS))
 }
 
 func getEnvDefault(key, defaultVal string) string {
