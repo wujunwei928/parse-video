@@ -19,9 +19,6 @@ function handleDownloadClick(button) {
 
         // 调用批量下载函数
         downloadAllImages(downloadData.images, downloadData.title);
-
-        // 清理全局变量(可选,如果数据量大可以考虑清理)
-        // delete window[downloadDataId];
     } catch (error) {
         console.error('处理下载点击失败:', error);
         mdui.snackbar({
@@ -31,27 +28,22 @@ function handleDownloadClick(button) {
 }
 
 // 批量下载图片函数
-async function downloadAllImages(imagesData, title) {
+async function downloadAllImages(images, title) {
     try {
         // 检查必要的库是否加载
-        if (typeof JSZip === 'undefined') {
-            mdui.snackbar({
-                message: 'JSZip库未加载,请检查网络连接或刷新页面重试',
-                timeout: 5000
-            });
-            return;
+        const requiredLibs = [
+            { name: 'JSZip', label: 'JSZip库' },
+            { name: 'saveAs', label: 'FileSaver.js库' }
+        ];
+        for (const lib of requiredLibs) {
+            if (typeof window[lib.name] === 'undefined') {
+                mdui.snackbar({
+                    message: lib.label + '未加载,请检查网络连接或刷新页面重试',
+                    timeout: 5000
+                });
+                return;
+            }
         }
-
-        if (typeof saveAs === 'undefined') {
-            mdui.snackbar({
-                message: 'FileSaver.js库未加载,请检查网络连接或刷新页面重试',
-                timeout: 5000
-            });
-            return;
-        }
-
-        // imagesData 现在直接是图片数组,不需要解码
-        const images = imagesData;
 
         if (!images || images.length === 0) {
             mdui.snackbar({
@@ -72,12 +64,9 @@ async function downloadAllImages(imagesData, title) {
         // 下载所有图片
         const downloadPromises = images.map(async (item, index) => {
             try {
-                const response = await fetch(item.url, {
-                    headers: {
-                        'Referer': 'https://www.douyin.com/',
-                        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1'
-                    }
-                });
+                // Referer/User-Agent 属浏览器禁止设置的 header，会被静默丢弃，故不传；
+                // 跨域图片下载的防盗链绕过靠 <a referrerpolicy="no-referrer">，无法在 fetch 端实现。
+                const response = await fetch(item.url);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);

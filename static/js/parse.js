@@ -1,21 +1,12 @@
 // 原有的解析功能
-function setValue() {
+async function setValue() {
     var data = document.getElementById("url").value;
     let regex = /http[s]?:\/\/[\w.-]+[\w\/-]*[\w.-:]*\??[\w=&:\-\+\%.]*[/]*/;
     var v = data.match(regex)[0];
-    console.log(v);
 
-    var xmlhttp;
-    if (window.XMLHttpRequest) {
-        xmlhttp = new XMLHttpRequest();
-    } else { // code for IE6, IE5
-        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-    }
-
-    xmlhttp.open("GET", "/video/share/url/parse?url=" + encodeURIComponent(v), false);
-    xmlhttp.send();
-    var jsonObj = JSON.parse(xmlhttp.responseText);
-    console.log(jsonObj);
+    // 异步请求，避免同步 XHR 阻塞主线程导致 UI 冻结
+    var resp = await fetch("/video/share/url/parse?url=" + encodeURIComponent(v));
+    var jsonObj = await resp.json();
 
     if (jsonObj.code == 200) {
         mdui.snackbar({
@@ -59,7 +50,7 @@ function setValue() {
                 successHtml += '<div style="display: inline-block; margin: 1em; text-align: center;">';
                 successHtml += '<img src="' + item.url + '" style="width: 160px; display: block; margin-bottom: 0.5em;"/>';
                 successHtml += '<div style="margin-top: 0.5em;">';
-                successHtml += '<a class="mdui-btn mdui-btn-raised" href="' + item.url + '" target="_blank" download="image_' + (index + 1) + '.jpg" referrerpolicy="no-referrer" style="text-transform: none; margin-right: 0.5em;"><span>下载图片</span></a>';
+                successHtml += '<a class="mdui-btn mdui-btn-raised" href="' + item.url + '" target="_blank" download="image_' + (index + 1) + '.' + getImageExtension(item.url) + '" referrerpolicy="no-referrer" style="text-transform: none; margin-right: 0.5em;"><span>下载图片</span></a>';
                 // 如果 item.live_photo_url 不为空， 显示下载按钮
                 if (item.live_photo_url) {
                     successHtml += '<a class="mdui-btn mdui-btn-raised" href="' + item.live_photo_url + '" target="_blank" download="live_photo_' + (index + 1) + '.mp4" referrerpolicy="no-referrer" style="text-transform: none;"><span>下载LivePhoto</span></a>';

@@ -1,5 +1,7 @@
 // 主题管理
-let currentTheme = localStorage.getItem('selectedTheme') || 'original';
+function getSavedTheme() {
+    return localStorage.getItem('selectedTheme') || 'original';
+}
 
 function toggleThemeSelector() {
     const selector = document.getElementById('themeSelector');
@@ -24,7 +26,6 @@ function setTheme(themeName) {
     document.querySelector(`[data-theme="${themeName}"]`).classList.add('active');
 
     // 保存主题选择
-    currentTheme = themeName;
     localStorage.setItem('selectedTheme', themeName);
 
     // 显示主题切换提示
@@ -83,21 +84,19 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// 页面加载时应用保存的主题
-window.addEventListener('DOMContentLoaded', function() {
-    setTheme(currentTheme);
-
-    // 小屏幕下自动折叠主题选择器
+// 小屏幕下自动折叠主题选择器
+function collapseThemeSelectorOnSmallScreen() {
     if (window.innerWidth <= 600) {
         document.getElementById('themeSelector').classList.add('collapsed');
         document.getElementById('toggleIcon').textContent = '▶';
     }
+}
+
+// 页面加载时应用保存的主题
+window.addEventListener('DOMContentLoaded', function() {
+    setTheme(getSavedTheme());
+    collapseThemeSelectorOnSmallScreen();
 });
 
 // 响应式处理
-window.addEventListener('resize', function() {
-    if (window.innerWidth <= 600) {
-        document.getElementById('themeSelector').classList.add('collapsed');
-        document.getElementById('toggleIcon').textContent = '▶';
-    }
-});
+window.addEventListener('resize', collapseThemeSelectorOnSmallScreen);
