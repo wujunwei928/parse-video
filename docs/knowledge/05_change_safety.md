@@ -28,6 +28,11 @@ source_commit: ac2a71f
 - 禁止为了"看起来更优雅"重写稳定模块。
 - 禁止修改解析器时不测试实际平台链接。
 
+## Web UI 静态资源注意事项
+
+- **静态资源必须走 `/static/` 前缀**：`rateLimitMiddleware` 已对 `/static/` 前缀豁免限流（`exemptPrefixes` 参数）。`newIPRateLimiter` 写死 `burst=1`，若静态资源不豁免，页面首次加载并发请求多个 CSS/JS 会从第二个起全部 429，导致样式/脚本加载失败、`handleDownloadClick is not defined` 等连锁错误。新增静态资源路径务必保持 `/static/` 前缀；限流本意是保护解析 API，静态资源是纯文件服务无计算成本。
+- **开发态警惕 `go run` 的 embed 缓存**：修改 `static/` 或 `templates/` 内容后，`go run` 可能复用旧 embed（实测会出现新静态资源 404）。开发验证改用 `go build -o /tmp/pv . && /tmp/pv serve` 或 `go run -a`。生产 Docker 构建每次全新编译，不受影响。
+
 ## 修改前检查清单
 
 - 这个函数被谁调用？（可用 `grep` 或 `LSP: findReferences`）
