@@ -109,7 +109,7 @@ func RunParseShareURLTests(t *testing.T, cases []ParseShareURLTestCase)
 **目标**：验证测试基础设施的可用性，修复已知 bug。
 
 **微博**（关联 #79）：
-- 补充 `parser/weibo_test.go`（已有基础，需完善）
+- 完善 `parser/weibo_test.go`（已有基础测试，需增加覆盖场景）
 - 分享链接解析测试：视频类型、图集类型
 - 视频 ID 解析测试
 - **调查 #79 下载失败问题**：
@@ -151,8 +151,10 @@ func RunParseShareURLTests(t *testing.T, cases []ParseShareURLTestCase)
 
 **目标**：快速覆盖剩余 16 个平台。
 
-剩余平台列表：
-梨视频、皮皮搞笑、微视、全民小视频、最右、绿洲、全民K歌、六房间、美拍、新片场、逗拍、火山、AcFun、皮皮虾、六间房、Doupai
+剩余平台列表（16 个）：
+lishipin（梨视频）、pipigaoxiao（皮皮搞笑）、weishi（微视）、quanmin（全民小视频/度小视）、zuiyou（最右）、lvzhou（绿洲）、quanminkge（全民K歌）、sixroom（六房间）、meipai（美拍）、xinpianchang（新片场）、doupai（逗拍）、huoshan（火山）、acfun（AcFun）、pipixia（皮皮虾）、haokan（好看）、doupai（逗拍）
+
+> 注：好看（haokan）在第二批已覆盖，此处不重复；第三批实际为 15 个平台。
 
 **策略**：
 - 使用统一的简化模板：只验证解析流程不报错、返回非空
@@ -202,7 +204,7 @@ func RunParseShareURLTests(t *testing.T, cases []ParseShareURLTestCase)
 | `parser/testutil/testutil_test.go` | 新文件 | 测试工具自身的测试 |
 | `parser/testdata/<platform>/*` | 新目录 | Golden Files（按需） |
 | `utils/utils_test.go` | 新文件 | utils 包单元测试 |
-| 20 个 `parser/*_test.go` | 新文件 | 平台解析器测试 |
+| 20 个 `parser/*_test.go` | 新文件 | 平台解析器测试（微博为完善，其余 19 个为新建） |
 | `scripts/record-testdata.sh` | 新文件 | 测试数据录制脚本 |
 | `.github/workflows/go.yml` | 修改 | 增加覆盖率报告 |
 | Bug 修复（#79 和/或 #66） | 修改 | 视调查结果而定 |
