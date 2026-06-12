@@ -10,16 +10,23 @@ import (
 	"github.com/wujunwei928/parse-video/cmd"
 )
 
-//go:embed templates/*
-var templateFS embed.FS
+//go:embed templates/* all:static
+var assetsFS embed.FS
 
 func main() {
 	normalizeArgs()
-	sub, err := fs.Sub(templateFS, "templates")
+
+	tmplSub, err := fs.Sub(assetsFS, "templates")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("模板子树加载失败: %v", err)
 	}
-	cmd.SetTemplates(sub)
+	staticSub, err := fs.Sub(assetsFS, "static")
+	if err != nil {
+		log.Fatalf("静态资源子树加载失败: %v", err)
+	}
+
+	cmd.SetTemplates(tmplSub)
+	cmd.SetStatic(staticSub)
 	cmd.Execute()
 }
 
