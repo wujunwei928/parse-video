@@ -25,11 +25,12 @@ source_commit: ac2a71f
 
 | 路径 | 作用 | 是否核心 | 证据来源 |
 |---|---|---|---|
-| `main.go` | 程序入口，嵌入模板 | 核心 | `main.go` |
+| `main.go` | 程序入口，嵌入模板与静态资源（`//go:embed templates/* all:static`） | 核心 | `main.go` |
 | `cmd/` | Cobra CLI + Gin HTTP 服务 | 核心 | `cmd/*.go` |
 | `parser/` | 平台解析器 + 路由映射 | 核心 | `parser/*.go` |
 | `utils/` | URL 提取工具函数 | 核心 | `utils/utils.go` |
-| `templates/` | Web UI HTML 模板 | 辅助 | `templates/index.html` |
+| `templates/` | Web UI HTML 模板（骨架，引用外部 CSS/JS） | 辅助 | `templates/index.html` |
+| `static/` | Web UI 静态资源（7 CSS 主题 + theme/parse/download JS + favicon），经 embed 提供于 `/static` | 辅助 | `static/css/*`、`static/js/*` |
 | `api/` | OpenAPI 规范文件 | 辅助 | `api/openapi.yaml` |
 | `resources/` | 静态资源（海报等） | 辅助 | `resources/` |
 | `.github/workflows/` | CI/CD 配置 | 辅助 | `.github/workflows/*.yml` |
