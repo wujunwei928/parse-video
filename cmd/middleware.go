@@ -155,11 +155,20 @@ func (l *ipRateLimiter) retryAfterSeconds() int {
 	return s
 }
 
-func rateLimitMiddleware(limiter *ipRateLimiter, exemptPath string) gin.HandlerFunc {
+func rateLimitMiddleware(limiter *ipRateLimiter, exemptPath string, exemptPrefixes ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if c.Request.URL.Path == exemptPath {
+		path := c.Request.URL.Path
+		if path == exemptPath {
 			c.Next()
 			return
+		}
+		// 前缀豁免：静态资源（/static/）等无计算成本的路径不受限流，
+		// 避免 Web UI 首次加载并发请求多个 CSS/JS 时被 burst 限流击穿。
+		for _, prefix := range exemptPrefixes {
+			if strings.HasPrefix(path, prefix) {
+				c.Next()
+				return
+			}
 		}
 		ip, _, err := net.SplitHostPort(c.Request.RemoteAddr)
 		if err != nil {

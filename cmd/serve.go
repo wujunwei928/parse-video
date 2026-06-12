@@ -43,7 +43,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 	r.Use(recoveryMiddleware())
 	r.Use(corsMiddleware(corsOrigins))
 	r.Use(requestLogMiddleware())
-	r.Use(rateLimitMiddleware(newIPRateLimiter(rateLimitRPM), "/api/v1/health"))
+	r.Use(rateLimitMiddleware(newIPRateLimiter(rateLimitRPM), "/api/v1/health", "/static/"))
 	r.Use(basicAuthMiddleware(username, password, exemptPaths))
 
 	// 静态资源（CSS/JS/favicon）
