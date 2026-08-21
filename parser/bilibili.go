@@ -2,6 +2,7 @@ package parser
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -126,8 +127,11 @@ func (b biliBili) getBvidFromURL(rawURL string) (string, error) {
 		resp, err := client.R().
 			SetHeader(HttpHeaderUserAgent, UserAgent).
 			Get(rawURL)
-		if err != nil {
+		if err != nil && !errors.Is(err, resty.ErrAutoRedirectDisabled) {
 			return "", fmt.Errorf("请求b23.tv短链失败: %v", err)
+		}
+		if resp == nil {
+			return "", fmt.Errorf("请求b23.tv短链失败: 响应为空")
 		}
 
 		location := resp.Header().Get("Location")
