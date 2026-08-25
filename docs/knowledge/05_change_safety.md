@@ -18,7 +18,7 @@ source_commit: ac2a71f
 | Basic Auth | `cmd/middleware.go:basicAuthMiddleware` | 认证绕过风险 | 豁免路径列表 | 中 | `cmd/middleware.go:197-217` |
 | 速率限制 | `cmd/middleware.go:rateLimitMiddleware` | 限流过严/过松 | RPM 默认值、清理周期 | 中 | `cmd/middleware.go:158-176` |
 | 统一响应格式 | `cmd/response.go` | 错误码变化破坏客户端 | 错误码常量名 | 中 | `cmd/response.go:10-17` |
-| 抖音原生详情后备 | `parser/douyin.go`、`parser/douyin_detail.go` | 分享页缺少详情时需使用部署者自有 Cookie 请求官方接口 | 不得引入第三方解析接口或硬编码 Cookie；覆盖有/无 Cookie 与 query 签名顺序 | 中 | `parser/douyin_detail.go:douyinWebDetailFetcher` |
+| 抖音原生详情后备 | `parser/douyin.go`、`parser/douyin_detail.go` | 分享页缺少详情时先注册匿名 `ttwid`，也允许部署者自有 Cookie 覆盖 | 不得引入第三方解析接口或硬编码 Cookie；覆盖匿名注册、配置 Cookie 与 query 签名顺序 | 中 | `parser/douyin_detail.go:douyinWebDetailFetcher` |
 
 ## 禁止事项
 

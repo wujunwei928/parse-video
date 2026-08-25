@@ -19,6 +19,7 @@ import (
 const (
 	douyinCookieEnv          = "PARSE_VIDEO_DOUYIN_COOKIE"
 	douyinWebDetailEndpoint  = "https://www.douyin.com/aweme/v1/web/aweme/detail/"
+	douyinTTWidEndpoint      = "https://ttwid.bytedance.com/ttwid/union/register/"
 	douyinWebDetailUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"
 	douyinABogusBrowser      = "1536|742|1536|864|0|0|0|0|1536|864|1536|864|1536|742|24|24|MacIntel"
 	douyinABogusAlphabet     = "Dkdpgh2ZmsQB80/MfvV36XI1R45-WUAlEixNLwoqYTOPuzKFjJnry79HbGcaStCe"
@@ -43,11 +44,12 @@ var douyinABogusUserAgentCode = [32]byte{
 }
 
 type douyinWebDetailFetcher struct {
-	client   *resty.Client
-	endpoint string
-	cookie   string
-	now      func() time.Time
-	random   func() int
+	client        *resty.Client
+	endpoint      string
+	ttwidEndpoint string
+	cookie        string
+	now           func() time.Time
+	random        func() int
 }
 
 func (d douYin) fetchNativeVideoDetail(client *resty.Client, videoID string) (gjson.Result, error) {
@@ -61,10 +63,11 @@ func newDouyinWebDetailFetcher(client *resty.Client, cookie string) douyinWebDet
 	}
 
 	return douyinWebDetailFetcher{
-		client:   client,
-		endpoint: douyinWebDetailEndpoint,
-		cookie:   strings.TrimSpace(cookie),
-		now:      time.Now,
+		client:        client,
+		endpoint:      douyinWebDetailEndpoint,
+		ttwidEndpoint: douyinTTWidEndpoint,
+		cookie:        strings.TrimSpace(cookie),
+		now:           time.Now,
 		random: func() int {
 			return rand.Intn(10000)
 		},
@@ -72,9 +75,6 @@ func newDouyinWebDetailFetcher(client *resty.Client, cookie string) douyinWebDet
 }
 
 func (f douyinWebDetailFetcher) fetch(videoID string) (gjson.Result, error) {
-	if f.cookie == "" {
-		return gjson.Result{}, fmt.Errorf("%s is required for the native douyin detail request", douyinCookieEnv)
-	}
 	if !isDouyinVideoID(videoID) {
 		return gjson.Result{}, fmt.Errorf("invalid douyin video id: %q", videoID)
 	}
@@ -85,16 +85,28 @@ func (f douyinWebDetailFetcher) fetch(videoID string) (gjson.Result, error) {
 		return gjson.Result{}, errors.New("douyin detail endpoint is empty")
 	}
 
+	cookie := f.cookie
+	if cookie == "" {
+		var err error
+		cookie, err = f.fetchAnonymousCookie()
+		if err != nil {
+			return gjson.Result{}, fmt.Errorf("get anonymous douyin cookie: %w", err)
+		}
+	}
+
 	query := douyinWebDetailQuery(videoID)
 	requestURL := f.endpoint + "?" + query + "&a_bogus=" + f.aBogus(query)
-	response, err := f.client.R().
+	request := f.client.R().
 		SetHeaders(map[string]string{
 			HttpHeaderUserAgent: douyinWebDetailUserAgent,
 			HttpHeaderReferer:   "https://www.douyin.com/",
-			HttpHeaderCookie:    f.cookie,
 			"Accept-Language":   "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2",
-		}).
-		Get(requestURL)
+		})
+	if cookie != "" {
+		request.SetHeader(HttpHeaderCookie, cookie)
+	}
+
+	response, err := request.Get(requestURL)
 	if err != nil {
 		return gjson.Result{}, fmt.Errorf("request native douyin detail: %w", err)
 	}
@@ -122,6 +134,51 @@ func (f douyinWebDetailFetcher) fetch(videoID string) (gjson.Result, error) {
 	}
 
 	return data, nil
+}
+
+func (f douyinWebDetailFetcher) fetchAnonymousCookie() (string, error) {
+	if f.client == nil {
+		return "", errors.New("douyin detail client is nil")
+	}
+	if f.ttwidEndpoint == "" {
+		return "", errors.New("douyin ttwid endpoint is empty")
+	}
+
+	response, err := f.client.R().
+		SetHeader(HttpHeaderContentType, "application/json").
+		SetBody(map[string]any{
+			"region":        "cn",
+			"aid":           6383,
+			"needFid":       false,
+			"service":       "www.douyin.com",
+			"migrate_info":  map[string]string{"ticket": "", "source": "node"},
+			"cbUrlProtocol": "https",
+			"union":         true,
+		}).
+		Post(f.ttwidEndpoint)
+	if err != nil {
+		return "", fmt.Errorf("register ttwid: %w", err)
+	}
+	if response == nil {
+		return "", errors.New("ttwid registration returned empty response")
+	}
+	if response.StatusCode() < http.StatusOK || response.StatusCode() >= http.StatusMultipleChoices {
+		return "", fmt.Errorf("ttwid registration returned status %d", response.StatusCode())
+	}
+	if statusCode := gjson.GetBytes(response.Body(), "status_code"); !statusCode.Exists() || statusCode.Int() != 0 {
+		return "", fmt.Errorf(
+			"ttwid registration failed: status_code=%s, message=%q",
+			statusCode.String(),
+			strings.TrimSpace(gjson.GetBytes(response.Body(), "message").String()),
+		)
+	}
+
+	for _, cookie := range response.Cookies() {
+		if cookie.Name == "ttwid" && strings.TrimSpace(cookie.Value) != "" {
+			return (&http.Cookie{Name: cookie.Name, Value: cookie.Value}).String(), nil
+		}
+	}
+	return "", errors.New("ttwid registration did not return the ttwid cookie")
 }
 
 func (f douyinWebDetailFetcher) aBogus(query string) string {

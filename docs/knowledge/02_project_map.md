@@ -64,7 +64,7 @@ source_commit: ac2a71f
 |---|---|---|---|---|
 | gin | HTTP 路由和中间件 | `go.mod` | `cmd/serve.go`、`cmd/handlers.go`、`cmd/middleware.go` | `go.mod:require` |
 | resty | 请求平台接口 | `go.mod` | 所有 `parser/*.go` 解析器、`cmd/download.go` | `go.mod:require` |
-| Douyin Web detail API | 抖音分享页未内嵌作品详情时的原生后备查询 | `PARSE_VIDEO_DOUYIN_COOKIE`（部署者自有 Cookie） | `parser/douyin.go`、`parser/douyin_detail.go` | 抖音官方 `www.douyin.com` 接口 |
+| Douyin Web detail API | 抖音分享页未内嵌作品详情时的原生后备查询 | 默认通过字节跳动官方接口注册匿名 `ttwid`；`PARSE_VIDEO_DOUYIN_COOKIE` 可选覆盖 | `parser/douyin.go`、`parser/douyin_detail.go` | 字节跳动官方 `ttwid.bytedance.com` 与抖音官方 `www.douyin.com` 接口 |
 | gjson | 从 JSON 响应中提取字段 | `go.mod` | 多个解析器（douyin、kuaishou 等） | `go.mod:require` |
 | goquery | 解析 HTML 页面 | `go.mod` | 部分解析器（如 `parser/redbook.go`） | `go.mod:require` |
 | cobra | CLI 子命令管理 | `go.mod` | `cmd/root.go`、`cmd/serve.go`、`cmd/parse.go`、`cmd/id.go` | `go.mod:require` |

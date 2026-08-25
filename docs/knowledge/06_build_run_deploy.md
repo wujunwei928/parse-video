@@ -23,7 +23,7 @@ source_commit: ac2a71f
 | `PARSE_VIDEO_PASSWORD` | Basic Auth 密码 | 是 | 无（未设置则不开启认证） | `cmd/serve.go:35` | `cmd/middleware.go:basicAuthMiddleware` |
 | `RATE_LIMIT_RPM` | 每 IP 每分钟请求上限 | 否 | `60` | `cmd/serve.go:32` | `cmd/middleware.go:newIPRateLimiter` |
 | `CORS_ORIGINS` | 允许的跨域来源 | 否 | `*`（允许所有） | `cmd/serve.go:33` | `cmd/middleware.go:corsMiddleware` |
-| `PARSE_VIDEO_DOUYIN_COOKIE` | 抖音分享页未返回作品详情时，调用抖音官方 Web 详情接口的部署者自有 Cookie | 是 | 无（未设置时该后备查询返回明确错误；已有页面详情的解析不受影响） | `parser/douyin_detail.go` | `douyinWebDetailFetcher.fetch` |
+| `PARSE_VIDEO_DOUYIN_COOKIE` | 抖音分享页未返回作品详情时，可用部署者自有 Cookie 覆盖自动注册的匿名 `ttwid` | 是 | 无（默认自动注册匿名 `ttwid`，通常无需配置） | `parser/douyin_detail.go` | `douyinWebDetailFetcher.fetch` |
 
 ## 安装依赖
 
