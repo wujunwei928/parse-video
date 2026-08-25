@@ -2,6 +2,7 @@ package parser
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -158,20 +159,87 @@ func TestDouyinWebDetailFetcherReportsOfficialErrorStatus(t *testing.T) {
 	}
 }
 
-func TestDouyinWebDetailFetcherRequiresDeploymentCookie(t *testing.T) {
-	called := false
-	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
-		called = true
+func TestDouyinWebDetailFetcherRegistersAnonymousCookie(t *testing.T) {
+	const videoID = "7450123456789012345"
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		switch request.URL.Path {
+		case "/ttwid/union/register/":
+			if request.Method != http.MethodPost {
+				t.Errorf("registration method = %q", request.Method)
+			}
+			if request.Header.Get(HttpHeaderContentType) != "application/json" {
+				t.Errorf("registration Content-Type = %q", request.Header.Get(HttpHeaderContentType))
+			}
+			var payload struct {
+				Region  string `json:"region"`
+				Aid     int    `json:"aid"`
+				Service string `json:"service"`
+				Union   bool   `json:"union"`
+			}
+			if err := json.NewDecoder(request.Body).Decode(&payload); err != nil {
+				t.Errorf("decode registration body: %v", err)
+			}
+			if payload.Region != "cn" || payload.Aid != 6383 || payload.Service != "www.douyin.com" || !payload.Union {
+				t.Errorf("registration payload = %+v", payload)
+			}
+			http.SetCookie(writer, &http.Cookie{
+				Name:     "ttwid",
+				Value:    "anonymous-browser-id",
+				Domain:   ".bytedance.com",
+				Path:     "/",
+				HttpOnly: true,
+				Secure:   true,
+			})
+			writer.Header().Set("Content-Type", "application/json")
+			_, _ = writer.Write([]byte(`{"status_code":0,"message":"union register success"}`))
+		case "/aweme/v1/web/aweme/detail/":
+			if request.Header.Get(HttpHeaderCookie) != "ttwid=anonymous-browser-id" {
+				t.Errorf("detail Cookie = %q", request.Header.Get(HttpHeaderCookie))
+			}
+			writer.Header().Set("Content-Type", "application/json")
+			_, _ = writer.Write([]byte(`{"aweme_detail":{"aweme_id":"7450123456789012345","desc":"anonymous detail"}}`))
+		default:
+			t.Errorf("unexpected request path = %q", request.URL.Path)
+			http.NotFound(writer, request)
+		}
 	}))
 	defer server.Close()
 
 	fetcher := newDouyinWebDetailFetcher(resty.New(), "")
-	fetcher.endpoint = server.URL
-	_, err := fetcher.fetch("7450123456789012345")
-	if err == nil || !strings.Contains(err.Error(), douyinCookieEnv+" is required") {
-		t.Fatalf("fetch() error = %v, want missing cookie error", err)
+	fetcher.ttwidEndpoint = server.URL + "/ttwid/union/register/"
+	fetcher.endpoint = server.URL + "/aweme/v1/web/aweme/detail/"
+	fetcher.now = func() time.Time { return time.UnixMilli(1720000000123) }
+	fetcher.random = func() int { return 1234 }
+
+	data, err := fetcher.fetch(videoID)
+	if err != nil {
+		t.Fatalf("fetch() error = %v", err)
 	}
-	if called {
-		t.Fatal("fetch() made an HTTP request without a deployment cookie")
+	if got := data.Get("desc").String(); got != "anonymous detail" {
+		t.Errorf("desc = %q, want anonymous detail", got)
+	}
+}
+
+func TestDouyinWebDetailFetcherReportsAnonymousCookieError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.URL.Path != "/ttwid/union/register/" {
+			t.Errorf("detail request should not run after registration failure: %q", request.URL.Path)
+		}
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{"status_code":1,"message":"registration unavailable"}`))
+	}))
+	defer server.Close()
+
+	fetcher := newDouyinWebDetailFetcher(resty.New(), "")
+	fetcher.ttwidEndpoint = server.URL + "/ttwid/union/register/"
+	fetcher.endpoint = server.URL + "/aweme/v1/web/aweme/detail/"
+	_, err := fetcher.fetch("7450123456789012345")
+	if err == nil {
+		t.Fatal("fetch() error = nil, want registration error")
+	}
+	for _, want := range []string{"get anonymous douyin cookie", "status_code=1", `message="registration unavailable"`} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("fetch() error = %q, want substring %q", err, want)
+		}
 	}
 }
