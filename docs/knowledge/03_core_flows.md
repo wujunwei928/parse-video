@@ -46,6 +46,14 @@ confidence: high
 - **输出**：`VideoParseInfo` 结构体
 - **存储**：无持久化
 
+### 抖音详情后备
+
+1. 优先读取分享页内嵌的 `_ROUTER_DATA` 或图集详情。
+2. 页面为 CSR 空壳、未返回作品数据时，从同一官方页面读取临时 `xsstoken`、`webId` 和 `usercip`。
+3. 使用 `webId` 前 16 字节作为 AES-128-CBC 的 key 和 IV，对 `xsstoken` 做 PKCS#7 加密，并请求抖音官方 H5 `iteminfo` 接口。
+4. H5 路径失败时，才使用 `PARSE_VIDEO_DOUYIN_COOKIE` 请求官方 PC Web 详情接口作为第二后备。
+5. 两条后备均返回与原解析一致的作品结构，继续走统一的视频、图集和作者字段映射；临时 token 与 Cookie 均不持久化。
+
 ### 异常处理
 
 - URL 提取失败：返回 `str not have url` 错误
