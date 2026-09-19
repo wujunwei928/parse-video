@@ -47,6 +47,8 @@ source_commit: ac2a71f
 | `parser/parser.go:ParseVideoShareUrl` | URL 域名匹配→平台路由 | 分享链接解析 | 高 |
 | `parser/parser.go:ParseVideoId` | 平台+ID→解析路由 | ID 解析 | 高 |
 | `parser/parser.go:BatchParseVideoId` | 批量并发解析 | 批量解析 | 中 |
+| `parser/douyin_h5_detail.go:douyinH5DetailFetcher` | 分享页 CSR 无详情时，使用加密临时 token 请求官方 H5 详情 | 抖音分享链接/ID 解析 | 中 |
+| `parser/douyin_detail.go:douyinWebDetailFetcher` | H5 后备失败后的 Cookie-backed PC Web 第二后备 | 抖音分享链接/ID 解析 | 中 |
 | `utils/utils.go:RegexpMatchUrlFromString` | 正则提取 URL | 所有解析入口 | 高 |
 | `cmd/handlers.go:v1ParseURLHandler` | v1 API 分享链接解析 | HTTP API | 中 |
 | `cmd/handlers.go:v1ParseIDHandler` | v1 API ID 解析 | HTTP API | 中 |
@@ -64,6 +66,7 @@ source_commit: ac2a71f
 | `PARSE_VIDEO_PASSWORD` | Basic Auth 密码 | `cmd/middleware.go:basicAuthMiddleware` | 中（影响 API 访问） |
 | `RATE_LIMIT_RPM` | 每分钟每 IP 限流 | `cmd/middleware.go:newIPRateLimiter` | 低（重启生效） |
 | `CORS_ORIGINS` | CORS 允许来源 | `cmd/middleware.go:corsMiddleware` | 低（重启生效） |
+| `PARSE_VIDEO_DOUYIN_COOKIE` | 抖音 H5 详情后备失败后的 PC Web 第二后备凭据 | `parser/douyin_detail.go:douyinWebDetailFetcher` | 中（敏感凭据，仅重启/重建容器后生效） |
 
 ## 未确认事项总表
 
