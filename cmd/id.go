@@ -43,8 +43,12 @@ var idCmd = &cobra.Command{
 		if err := validateSource(source); err != nil {
 			return err
 		}
+		cookie, err := douyinCookieFlag(cmd)
+		if err != nil {
+			return err
+		}
 		videoID := args[0]
-		info, err := parser.ParseVideoId(source, videoID)
+		info, err := parser.ParseVideoIdWithDouyinCookie(source, videoID, cookie)
 		if err != nil {
 			return fmt.Errorf("解析失败: %w", err)
 		}
@@ -66,6 +70,7 @@ func init() {
 	rootCmd.AddCommand(idCmd)
 	idCmd.Flags().StringP("source", "s", "", "视频来源平台（必填）")
 	idCmd.Flags().String("format", FormatText, "输出格式: json, text")
+	idCmd.Flags().String("cookie", "", "抖音 Cookie（优先于环境变量）")
 	idCmd.Flags().BoolP("download", "d", false, "下载解析到的媒体文件")
 	idCmd.Flags().StringP("output-dir", "o", ".", "下载文件保存目录")
 	_ = idCmd.MarkFlagRequired("source")

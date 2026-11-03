@@ -2,6 +2,7 @@ package parser
 
 import (
 	"encoding/hex"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,6 +11,24 @@ import (
 
 	"github.com/go-resty/resty/v2"
 )
+
+type douyinRoundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f douyinRoundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func TestDouyinCookieArgumentOverridesEnvironment(t *testing.T) {
+	t.Setenv(douyinCookieEnv, "UIFID=environment-cookie")
+	client := resty.New().SetTransport(douyinRoundTripFunc(func(r *http.Request) (*http.Response, error) {
+		if r.Header.Get("uifid") != "argument-cookie" {
+			t.Errorf("request did not use the argument cookie")
+		}
+		return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(`{"aweme_detail":{"aweme_id":"7703117796061859110"}}`)), Request: r}, nil
+	}))
+	data, err := (douYin{cookie: "UIFID=argument-cookie"}).fetchNativeVideoDetail(client, "7703117796061859110")
+	if err != nil || data.Get("aweme_id").String() != "7703117796061859110" {
+		t.Fatalf("detail fetch failed: %v", err)
+	}
+}
 
 func TestDouyinSM3(t *testing.T) {
 	tests := []struct {
@@ -45,6 +64,37 @@ func TestMakeDouyinABogusDeterministic(t *testing.T) {
 	const want = "E7mhBdugDifihdWk5l/LfY3q6fuVYmQ/0SVkMD2ffaDOJL39HMOk9exobQ4vpY2NZfmv2-ujy5kSYrrMicQnA3v6HSRKl2xp-g00t-P2so0j5ZhjCfuDnzfF-vzWt-Bd-Jd3Ech/ovKSKYi0AIee-wHvyhnFwo8sNiD4"
 	if got != want {
 		t.Fatalf("makeDouyinABogus() = %q, want %q", got, want)
+	}
+}
+
+func TestSignDouyinWebQuery(t *testing.T) {
+	got := signDouyinWebQuery("a=one%2Ftwo&a_bogus=ab%2Fcd", "visitor", 1720000000)
+	want := "a=one%2Ftwo&a_bogus=ab%2Fcd&uifid=visitor&timestamp=1720000000&x-secsdk-web-signature=f43c8d122c44df0895a99c40ee92475e"
+	if got != want {
+		t.Fatalf("signed query = %q, want %q", got, want)
+	}
+}
+
+func TestDouyinWebDetailRequiresUIFID(t *testing.T) {
+	fetcher := newDouyinWebDetailFetcher(resty.New(), "sessionid=test")
+	_, err := fetcher.fetch("7703117796061859110")
+	if err == nil || !strings.Contains(err.Error(), "UIFID") {
+		t.Fatalf("error = %v, want missing UIFID error", err)
+	}
+}
+
+func TestDouyinWebDetailAcceptsTemporaryUIFID(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("uifid") != "temporary-visitor" || r.URL.Query().Get("uifid") != "temporary-visitor" {
+			t.Error("temporary visitor identity was not used for signing")
+		}
+		_, _ = w.Write([]byte(`{"aweme_detail":{"aweme_id":"7703117796061859110"}}`))
+	}))
+	defer server.Close()
+	fetcher := newDouyinWebDetailFetcher(resty.New(), "UIFID_TEMP=temporary-visitor; ttwid=test")
+	fetcher.endpoint = server.URL
+	if _, err := fetcher.fetch("7703117796061859110"); err != nil {
+		t.Fatalf("temporary visitor identity rejected: %v", err)
 	}
 }
 
@@ -100,17 +150,20 @@ func TestDouyinWebDetailFetcherFetchesOfficialDetail(t *testing.T) {
 		if request.URL.Path != "/aweme/v1/web/aweme/detail/" {
 			t.Errorf("request path = %q", request.URL.Path)
 		}
-		if request.Header.Get(HttpHeaderCookie) != "sessionid=deployment-owned-cookie" {
+		if request.Header.Get(HttpHeaderCookie) != "sessionid=deployment-owned-cookie; UIFID=visitor" {
 			t.Errorf("Cookie = %q", request.Header.Get(HttpHeaderCookie))
 		}
 		if request.Header.Get(HttpHeaderReferer) != "https://www.douyin.com/" {
 			t.Errorf("Referer = %q", request.Header.Get(HttpHeaderReferer))
 		}
-		if got := strings.TrimSuffix(request.URL.RawQuery, "&a_bogus="+request.URL.Query().Get("a_bogus")); got != query {
-			t.Errorf("signed query = %q, want %q", got, query)
+		if !strings.HasPrefix(request.URL.RawQuery, query+"&a_bogus=") {
+			t.Error("request did not preserve the signed query order")
 		}
 		if aBogus := request.URL.Query().Get("a_bogus"); aBogus == "" {
 			t.Error("a_bogus is missing")
+		}
+		if request.Header.Get("uifid") != "visitor" || request.URL.Query().Get("uifid") != "visitor" || request.URL.Query().Get("timestamp") != "1720000000" || request.URL.Query().Get("x-secsdk-web-signature") == "" {
+			t.Error("security identity, timestamp, or signature is missing")
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
@@ -118,7 +171,7 @@ func TestDouyinWebDetailFetcherFetchesOfficialDetail(t *testing.T) {
 	}))
 	defer server.Close()
 
-	fetcher := newDouyinWebDetailFetcher(resty.New(), "sessionid=deployment-owned-cookie")
+	fetcher := newDouyinWebDetailFetcher(resty.New(), "sessionid=deployment-owned-cookie; UIFID=visitor")
 	fetcher.endpoint = server.URL + "/aweme/v1/web/aweme/detail/"
 	fetcher.now = func() time.Time { return time.UnixMilli(1720000000123) }
 	fetcher.random = func() int { return 1234 }
@@ -142,7 +195,7 @@ func TestDouyinWebDetailFetcherReportsOfficialErrorStatus(t *testing.T) {
 	}))
 	defer server.Close()
 
-	fetcher := newDouyinWebDetailFetcher(resty.New(), "sessionid=deployment-owned-cookie")
+	fetcher := newDouyinWebDetailFetcher(resty.New(), "sessionid=deployment-owned-cookie; UIFID=visitor")
 	fetcher.endpoint = server.URL
 	fetcher.now = func() time.Time { return time.UnixMilli(1720000000123) }
 	fetcher.random = func() int { return 1234 }

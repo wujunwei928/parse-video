@@ -23,6 +23,10 @@ var parseCmd = &cobra.Command{
 		if err := validateFormat(format); err != nil {
 			return err
 		}
+		cookie, err := douyinCookieFlag(cmd)
+		if err != nil {
+			return err
+		}
 		filePath, _ := cmd.Flags().GetString("file")
 		if len(args) > 0 && filePath != "" {
 			return fmt.Errorf("不能同时指定链接和文件输入")
@@ -43,7 +47,7 @@ var parseCmd = &cobra.Command{
 			return nil
 		}
 		if len(inputs) == 1 {
-			info, err := parser.ParseVideoShareUrlByRegexp(inputs[0])
+			info, err := parser.ParseVideoShareUrlByRegexpWithDouyinCookie(inputs[0], cookie)
 			if err != nil {
 				return fmt.Errorf("解析失败: %w", err)
 			}
@@ -67,6 +71,7 @@ func init() {
 	rootCmd.AddCommand(parseCmd)
 	parseCmd.Flags().StringP("file", "f", "", "从文件读取链接（每行一个，- 代表 stdin）")
 	parseCmd.Flags().String("format", FormatText, "输出格式: json, text")
+	parseCmd.Flags().String("cookie", "", "抖音 Cookie（优先于环境变量）")
 	parseCmd.Flags().BoolP("download", "d", false, "下载解析到的媒体文件")
 	parseCmd.Flags().StringP("output-dir", "o", ".", "下载文件保存目录")
 }
@@ -98,6 +103,10 @@ func readInputsFromFile(filePath string) ([]string, error) {
 }
 
 func runBatchParse(cmd *cobra.Command, inputs []string, format string) error {
+	cookie, err := douyinCookieFlag(cmd)
+	if err != nil {
+		return err
+	}
 	items := make([]batchResult, len(inputs))
 	sem := make(chan struct{}, defaultBatchParseConcurrency)
 	var wg sync.WaitGroup
@@ -107,7 +116,7 @@ func runBatchParse(cmd *cobra.Command, inputs []string, format string) error {
 		go func(idx int, in string) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			info, err := parser.ParseVideoShareUrlByRegexp(in)
+			info, err := parser.ParseVideoShareUrlByRegexpWithDouyinCookie(in, cookie)
 			if err != nil {
 				items[idx] = batchResult{Input: in, Failed: true, ErrMsg: err.Error()}
 			} else {

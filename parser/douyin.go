@@ -15,7 +15,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-type douYin struct{}
+type douYin struct{ cookie string }
 
 func (d douYin) parseVideoID(videoId string) (*VideoParseInfo, error) {
 	reqUrl := fmt.Sprintf("https://www.iesdouyin.com/share/video/%s", videoId)

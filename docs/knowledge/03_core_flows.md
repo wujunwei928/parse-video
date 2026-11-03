@@ -22,6 +22,8 @@ confidence: high
 | HTTP Legacy | `GET /video/share/url/parse?url=xxx` | `cmd/handlers.go:legacyParseURLHandler` |
 | CLI | `go run main.go parse "分享文案"` | `cmd/parse.go:parseCmd` |
 
+CLI 的 `--cookie` 为本次命令提供抖音 Cookie，优先于 `PARSE_VIDEO_DOUYIN_COOKIE`；批量解析中的抖音链接共用该参数。未传参数时继续使用环境变量或自动访客身份。
+
 ### 执行链路
 
 1. 从输入字符串中用正则提取 URL（`utils.RegexpMatchUrlFromString`）
@@ -69,6 +71,8 @@ confidence: high
 | HTTP API | `GET /api/v1/parse/:source/:video_id` | `cmd/handlers.go:v1ParseIDHandler` |
 | HTTP Legacy | `GET /video/id/parse?source=xxx&video_id=xxx` | `cmd/handlers.go:legacyParseIDHandler` |
 | CLI | `go run main.go id --source douyin "视频ID"` | `cmd/id.go:idCmd` |
+
+CLI 的 `--cookie` 也可用于 ID 解析，优先级与分享链接解析一致。
 
 ### 执行链路
 
