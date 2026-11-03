@@ -35,6 +35,7 @@ var idCmd = &cobra.Command{
 	Long:  "根据视频 ID 和平台来源解析视频信息。需要通过 --source 指定平台。",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		parser.EnableDouyinGuestDiskCache()
 		format, _ := cmd.Flags().GetString("format")
 		if err := validateFormat(format); err != nil {
 			return err

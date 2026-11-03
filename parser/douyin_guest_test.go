@@ -1,15 +1,57 @@
 package parser
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/go-resty/resty/v2"
 )
+
+func TestDouyinGuestDiskCacheAcrossInstances(t *testing.T) {
+	var registrations atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/ttwid/register" {
+			http.SetCookie(w, &http.Cookie{Name: "ttwid", Value: fmt.Sprint(registrations.Add(1))})
+			return
+		}
+		w.Header().Set("x-tt-trace-host", strings.Repeat("ab", 32))
+	}))
+	defer server.Close()
+	path := filepath.Join(t.TempDir(), "cache", "guest.json")
+	first := douyinGuestIdentityCache{file: path}
+	cookie, err := first.get(resty.New(), server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second := douyinGuestIdentityCache{file: path}
+	reused, err := second.get(resty.New(), server.URL)
+	if err != nil || reused != cookie || registrations.Load() != 1 {
+		t.Fatalf("disk cache was not reused: %v, registrations=%d", err, registrations.Load())
+	}
+	second.invalidate(reused)
+	refreshed, err := second.get(resty.New(), server.URL)
+	if err != nil || refreshed == reused || registrations.Load() != 2 {
+		t.Fatalf("rejected disk identity was not refreshed: %v, registrations=%d", err, registrations.Load())
+	}
+	third := douyinGuestIdentityCache{file: path}
+	if got, err := third.get(resty.New(), server.URL); err != nil || got != refreshed {
+		t.Fatalf("refreshed identity was not saved: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(fmt.Sprintf(`{"cookie":"old","expires":%q}`, time.Now().Add(-time.Minute).Format(time.RFC3339))), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := (&douyinGuestIdentityCache{file: path}).get(resty.New(), server.URL); err != nil || registrations.Load() != 3 {
+		t.Fatalf("expired identity was not refreshed: %v", err)
+	}
+}
 
 func TestDouyinGuestIdentityRegistrationAndCache(t *testing.T) {
 	var registrations atomic.Int32

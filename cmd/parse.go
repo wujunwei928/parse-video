@@ -19,6 +19,7 @@ var parseCmd = &cobra.Command{
 	Short: "解析视频分享链接",
 	Long:  "解析视频分享链接，支持单条和多条。也可以直接传入包含链接的分享文案。",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		parser.EnableDouyinGuestDiskCache()
 		format, _ := cmd.Flags().GetString("format")
 		if err := validateFormat(format); err != nil {
 			return err
