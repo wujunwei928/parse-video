@@ -22,6 +22,10 @@ confidence: high
 | HTTP Legacy | `GET /video/share/url/parse?url=xxx` | `cmd/handlers.go:legacyParseURLHandler` |
 | CLI | `go run main.go parse "分享文案"` | `cmd/parse.go:parseCmd` |
 
+CLI 的 `--cookie` 为本次命令提供抖音 Cookie，优先于 `PARSE_VIDEO_DOUYIN_COOKIE`；批量解析中的抖音链接共用该参数。未传参数时继续使用环境变量或自动访客身份。
+
+CLI 自动访客身份会在用户缓存目录的 `parse-video/douyin-guest.json` 中缓存约 10 分钟，供多次启动复用；手动 Cookie 不持久化。缓存无法使用时回退进程内缓存，访客身份被拒绝时重新获取。服务模式仅使用进程内缓存。
+
 ### 执行链路
 
 1. 从输入字符串中用正则提取 URL（`utils.RegexpMatchUrlFromString`）
@@ -44,7 +48,7 @@ confidence: high
 - **输入**：包含分享链接的文本（如 `7.87 Pjm:/ 复制打开抖音 https://v.douyin.com/xxx`）
 - **处理**：URL 提取 → 域名匹配 → HTTP 请求平台页面/接口 → 解析 JSON/HTML
 - **输出**：`VideoParseInfo` 结构体
-- **存储**：无持久化
+- **存储**：CLI 自动访客身份可短期持久化，不缓存解析结果
 
 ### 异常处理
 
@@ -69,6 +73,8 @@ confidence: high
 | HTTP API | `GET /api/v1/parse/:source/:video_id` | `cmd/handlers.go:v1ParseIDHandler` |
 | HTTP Legacy | `GET /video/id/parse?source=xxx&video_id=xxx` | `cmd/handlers.go:legacyParseIDHandler` |
 | CLI | `go run main.go id --source douyin "视频ID"` | `cmd/id.go:idCmd` |
+
+CLI 的 `--cookie` 也可用于 ID 解析，优先级与分享链接解析一致。
 
 ### 执行链路
 

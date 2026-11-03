@@ -35,6 +35,7 @@ var idCmd = &cobra.Command{
 	Long:  "根据视频 ID 和平台来源解析视频信息。需要通过 --source 指定平台。",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		parser.EnableDouyinGuestDiskCache()
 		format, _ := cmd.Flags().GetString("format")
 		if err := validateFormat(format); err != nil {
 			return err
@@ -43,8 +44,12 @@ var idCmd = &cobra.Command{
 		if err := validateSource(source); err != nil {
 			return err
 		}
+		cookie, err := douyinCookieFlag(cmd)
+		if err != nil {
+			return err
+		}
 		videoID := args[0]
-		info, err := parser.ParseVideoId(source, videoID)
+		info, err := parser.ParseVideoIdWithDouyinCookie(source, videoID, cookie)
 		if err != nil {
 			return fmt.Errorf("解析失败: %w", err)
 		}
@@ -66,6 +71,7 @@ func init() {
 	rootCmd.AddCommand(idCmd)
 	idCmd.Flags().StringP("source", "s", "", "视频来源平台（必填）")
 	idCmd.Flags().String("format", FormatText, "输出格式: json, text")
+	idCmd.Flags().String("cookie", "", "抖音 Cookie（优先于环境变量）")
 	idCmd.Flags().BoolP("download", "d", false, "下载解析到的媒体文件")
 	idCmd.Flags().StringP("output-dir", "o", ".", "下载文件保存目录")
 	_ = idCmd.MarkFlagRequired("source")

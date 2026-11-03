@@ -11,16 +11,25 @@ import (
 
 // ParseVideoShareUrlByRegexp 将分享链接信息, 进行正则表达式匹配到分享链接后, 再解析视频信息
 func ParseVideoShareUrlByRegexp(shareMsg string) (*VideoParseInfo, error) {
+	return ParseVideoShareUrlByRegexpWithDouyinCookie(shareMsg, "")
+}
+
+// ParseVideoShareUrlByRegexpWithDouyinCookie 使用单次解析指定的抖音 Cookie。
+func ParseVideoShareUrlByRegexpWithDouyinCookie(shareMsg, cookie string) (*VideoParseInfo, error) {
 	videoShareUrl, err := utils.RegexpMatchUrlFromString(shareMsg)
 	if err != nil {
 		return nil, err
 	}
 
-	return ParseVideoShareUrl(videoShareUrl)
+	return parseVideoShareURL(videoShareUrl, cookie)
 }
 
 // ParseVideoShareUrl 根据视频分享链接解析视频信息: 分享链接需是正常http链接
 func ParseVideoShareUrl(shareUrl string) (*VideoParseInfo, error) {
+	return parseVideoShareURL(shareUrl, "")
+}
+
+func parseVideoShareURL(shareUrl, cookie string) (*VideoParseInfo, error) {
 	// 根据分享url判断source
 	source := ""
 	for itemSource, itemSourceInfo := range videoSourceInfoMapping {
@@ -45,12 +54,20 @@ func ParseVideoShareUrl(shareUrl string) (*VideoParseInfo, error) {
 	if urlParser == nil {
 		return nil, fmt.Errorf("source %s has no video share url parser", source)
 	}
+	if source == SourceDouYin && strings.TrimSpace(cookie) != "" {
+		urlParser = douYin{cookie: cookie}
+	}
 
 	return urlParser.parseShareUrl(shareUrl)
 }
 
 // ParseVideoId 根据视频id解析视频信息
 func ParseVideoId(source, videoId string) (*VideoParseInfo, error) {
+	return ParseVideoIdWithDouyinCookie(source, videoId, "")
+}
+
+// ParseVideoIdWithDouyinCookie 使用单次解析指定的抖音 Cookie。
+func ParseVideoIdWithDouyinCookie(source, videoId, cookie string) (*VideoParseInfo, error) {
 	if len(videoId) <= 0 || len(source) <= 0 {
 		return nil, errors.New("video id or source is empty")
 	}
@@ -58,6 +75,9 @@ func ParseVideoId(source, videoId string) (*VideoParseInfo, error) {
 	idParser := videoSourceInfoMapping[source].VideoIdParser
 	if idParser == nil {
 		return nil, fmt.Errorf("source %s has no video id parser", source)
+	}
+	if source == SourceDouYin && strings.TrimSpace(cookie) != "" {
+		idParser = douYin{cookie: cookie}
 	}
 
 	return idParser.parseVideoID(videoId)

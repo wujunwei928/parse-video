@@ -92,14 +92,23 @@ go run main.go serve
 
 ### 抖音原生详情后备（可选）
 
-抖音分享页未内嵌作品详情时，解析器会请求抖音官方 Web 详情接口。部署者可配置自己账号的完整 Cookie 请求头以启用该后备路径：
+抖音分享页未内嵌作品详情时，解析器会请求抖音官方 Web 详情接口。默认通过 HTTP 自动获取未登录访客身份，缓存约 10 分钟，身份被拒绝时重新获取一次，无需配置 Cookie 或安装浏览器。CLI 额外将自动获取的访客身份保存在用户缓存目录的 `parse-video/douyin-guest.json` 中，供后续进程复用（Windows 通常为 `%LocalAppData%` 下）；可删除该文件清除缓存，无法读写时自动回退为进程内缓存。手动 Cookie 不会写入该文件。抖音的接口和风控可能发生变化。
+
+如需使用自己的会话，可选配完整 Cookie 请求头；设置后优先使用该 Cookie，不自动切换访客身份：
 
 ```bash
 export PARSE_VIDEO_DOUYIN_COOKIE='部署者自有的完整 Cookie 请求头'
 go run main.go parse "抖音分享链接"
 ```
 
-该值是敏感凭据，请勿提交到仓库或使用他人的 Cookie。未设置时，页面本身已包含详情的解析不受影响；只有需要该后备路径的请求会返回明确的配置错误。解析器不会调用第三方下载或解析服务。
+命令行也可以针对本次解析传入 Cookie，优先级高于环境变量，批量解析时会对抖音链接使用同一个 Cookie：
+
+```bash
+parse-video parse "抖音分享链接" --cookie 'UIFID=你的值; ttwid=你的值' --format json
+parse-video id --source douyin "视频ID" --cookie 'UIFID=你的值; ttwid=你的值' --format json
+```
+
+该值是敏感凭据，请勿提交到仓库或使用他人的 Cookie；命令行参数可能被命令历史或进程列表记录。Cookie 需包含有效的 `UIFID` 或 `UIFID_TEMP`；详情接口签名在程序内计算，解析器不会调用第三方下载或解析服务。
 
 ### `parse` - 解析视频分享链接
 

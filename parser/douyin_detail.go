@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"crypto/md5"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -22,6 +23,7 @@ const (
 	douyinWebDetailUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"
 	douyinABogusBrowser      = "1536|742|1536|864|0|0|0|0|1536|864|1536|864|1536|742|24|24|MacIntel"
 	douyinABogusAlphabet     = "Dkdpgh2ZmsQB80/MfvV36XI1R45-WUAlEixNLwoqYTOPuzKFjJnry79HbGcaStCe"
+	douyinWebSignSalt        = "A96D855A08C0A9707F8BEF0D9A527E4E"
 )
 
 var douyinABogusInitialState = [8]uint32{
@@ -51,9 +53,33 @@ type douyinWebDetailFetcher struct {
 }
 
 func (d douYin) fetchNativeVideoDetail(client *resty.Client, videoID string) (gjson.Result, error) {
-	fetcher := newDouyinWebDetailFetcher(client, os.Getenv(douyinCookieEnv))
-	return fetcher.fetch(videoID)
+	if cookie := strings.TrimSpace(d.cookie); cookie != "" {
+		return newDouyinWebDetailFetcher(client, cookie).fetch(videoID)
+	}
+	if cookie := strings.TrimSpace(os.Getenv(douyinCookieEnv)); cookie != "" {
+		return newDouyinWebDetailFetcher(client, cookie).fetch(videoID)
+	}
+	return fetchDouyinDetailWithGuest(client, videoID, &douyinGuestCache, "https://www.douyin.com")
 }
+
+func fetchDouyinDetailWithGuest(client *resty.Client, videoID string, cache *douyinGuestIdentityCache, baseURL string) (gjson.Result, error) {
+	for attempt := 0; attempt < 2; attempt++ {
+		cookie, err := cache.get(client, baseURL)
+		if err != nil {
+			return gjson.Result{}, fmt.Errorf("get guest identity: %w", err)
+		}
+		fetcher := newDouyinWebDetailFetcher(client, cookie)
+		fetcher.endpoint = baseURL + "/aweme/v1/web/aweme/detail/"
+		data, err := fetcher.fetch(videoID)
+		if !errors.Is(err, errDouyinGuestRejected) || attempt == 1 {
+			return data, err
+		}
+		cache.invalidate(cookie)
+	}
+	return gjson.Result{}, errDouyinGuestRejected
+}
+
+var errDouyinGuestRejected = errors.New("douyin detail rejected identity or returned no detail")
 
 func newDouyinWebDetailFetcher(client *resty.Client, cookie string) douyinWebDetailFetcher {
 	if client == nil {
@@ -84,14 +110,29 @@ func (f douyinWebDetailFetcher) fetch(videoID string) (gjson.Result, error) {
 	if f.endpoint == "" {
 		return gjson.Result{}, errors.New("douyin detail endpoint is empty")
 	}
+	request := &http.Request{Header: http.Header{"Cookie": []string{f.cookie}}}
+	uifid, err := request.Cookie("UIFID")
+	if err != nil || uifid.Value == "" {
+		uifid, err = request.Cookie("UIFID_TEMP")
+	}
+	if err != nil || uifid.Value == "" {
+		return gjson.Result{}, fmt.Errorf("%s must contain a non-empty UIFID or UIFID_TEMP cookie", douyinCookieEnv)
+	}
 
 	query := douyinWebDetailQuery(videoID)
-	requestURL := f.endpoint + "?" + query + "&a_bogus=" + f.aBogus(query)
+	query += "&a_bogus=" + url.QueryEscape(f.aBogus(query))
+	now := f.now
+	if now == nil {
+		now = time.Now
+	}
+	query = signDouyinWebQuery(query, uifid.Value, now().Unix())
+	requestURL := f.endpoint + "?" + query
 	response, err := f.client.R().
 		SetHeaders(map[string]string{
 			HttpHeaderUserAgent: douyinWebDetailUserAgent,
 			HttpHeaderReferer:   "https://www.douyin.com/",
 			HttpHeaderCookie:    f.cookie,
+			"uifid":             uifid.Value,
 			"Accept-Language":   "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2",
 		}).
 		Get(requestURL)
@@ -102,14 +143,18 @@ func (f douyinWebDetailFetcher) fetch(videoID string) (gjson.Result, error) {
 		return gjson.Result{}, errors.New("native douyin detail returned empty response")
 	}
 	if response.StatusCode() < http.StatusOK || response.StatusCode() >= http.StatusMultipleChoices {
+		if response.StatusCode() == http.StatusForbidden {
+			return gjson.Result{}, fmt.Errorf("native douyin detail returned status %d: %w", response.StatusCode(), errDouyinGuestRejected)
+		}
 		return gjson.Result{}, fmt.Errorf("native douyin detail returned status %d", response.StatusCode())
 	}
 
 	data := gjson.GetBytes(response.Body(), "aweme_detail")
 	if !data.Exists() {
 		return gjson.Result{}, fmt.Errorf(
-			"native douyin detail did not return aweme_detail: %s",
+			"native douyin detail did not return aweme_detail: %s: %w",
 			strings.TrimSpace(gjson.GetBytes(response.Body(), "status_msg").String()),
+			errDouyinGuestRejected,
 		)
 	}
 	if awemeID := data.Get("aweme_id").String(); awemeID != videoID {
@@ -122,6 +167,14 @@ func (f douyinWebDetailFetcher) fetch(videoID string) (gjson.Result, error) {
 	}
 
 	return data, nil
+}
+
+// The security SDK signs the exact encoded query, including UIFID and timestamp.
+func signDouyinWebQuery(query, uifid string, timestamp int64) string {
+	stamp := fmt.Sprint(timestamp)
+	query += "&uifid=" + url.QueryEscape(uifid) + "&timestamp=" + stamp
+	digest := md5.Sum([]byte(uifid + "_" + stamp + "_" + douyinWebSignSalt + "_" + query))
+	return query + "&x-secsdk-web-signature=" + fmt.Sprintf("%x", digest)
 }
 
 func (f douyinWebDetailFetcher) aBogus(query string) string {
