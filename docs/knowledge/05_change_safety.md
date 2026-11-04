@@ -19,6 +19,7 @@ source_commit: ac2a71f
 | 速率限制 | `cmd/middleware.go:rateLimitMiddleware` | 限流过严/过松 | RPM 默认值、清理周期 | 中 | `cmd/middleware.go:158-176` |
 | 统一响应格式 | `cmd/response.go` | 错误码变化破坏客户端 | 错误码常量名 | 中 | `cmd/response.go:10-17` |
 | 抖音原生详情后备 | `parser/douyin.go`、`parser/douyin_detail.go` | 分享页缺少详情时需使用部署者自有 Cookie 请求官方接口 | 不得引入第三方解析接口或硬编码 Cookie；覆盖有/无 Cookie 与 query 签名顺序 | 中 | `parser/douyin_detail.go:douyinWebDetailFetcher` |
+| 小红书解析器 | `parser/redbook.go` | 桌面 UA 的无登录请求会被 302 到登录页（返回空壳 `__INITIAL_STATE__`）；服务端为 h264 分享流烧录水印（作者昵称+小红书 logo），h265 转码流无水印 | 必须使用移动端 UA（`DefaultUserAgent`）；数据路径需兼容移动端 `noteData.data.noteData` 与桌面端 `note.noteDetailMap.<id>.note` 双结构；视频流优先取 `h265.0.masterUrl`（无水印），仅 h264 时回退；无视频且无图片时必须返回解析失败而非空数据 | 高 | `parser/redbook.go:parseShareUrl`（2026-09 实测桌面 UA 302，移动端 UA 返回完整 SSR 数据；2026-11 实测 h264 流带烧录水印） |
 
 ## 禁止事项
 

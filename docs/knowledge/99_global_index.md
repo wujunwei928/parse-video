@@ -45,6 +45,7 @@ source_commit: ac2a71f
 |---|---|---|---|
 | `parser/vars.go:videoSourceInfoMapping` | 27 个平台映射表 | 所有解析 | 高 |
 | `parser/parser.go:ParseVideoShareUrl` | URL 域名匹配→平台路由 | 分享链接解析 | 高 |
+| `parser/redbook.go:parseNoteInfoFromHtml` | 小红书笔记页数据提取（必须移动端 UA，双结构兼容；视频流优先 h265 无水印，回退 h264 带烧录水印流） | 小红书分享链接解析 | 高 |
 | `parser/parser.go:ParseVideoId` | 平台+ID→解析路由 | ID 解析 | 高 |
 | `parser/parser.go:BatchParseVideoId` | 批量并发解析 | 批量解析 | 中 |
 | `utils/utils.go:RegexpMatchUrlFromString` | 正则提取 URL | 所有解析入口 | 高 |
