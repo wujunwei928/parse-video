@@ -201,13 +201,3 @@ Uses the default five-label triage vocabulary (needs-triage, needs-info, ready-f
 
 Single-context layout: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
----
-
-## AI 知识库使用规则（强制）
-
-> **IMPORTANT**: 本项目有 AI 编程知识库。任何代码修改前，必须先读取知识库中的相关文档。详见 `docs/knowledge/00_ai_entry.md`。
-
-- **入口文件**：`docs/knowledge/00_ai_entry.md`
-- **全局索引**：`docs/knowledge/99_global_index.md`（按任务类型定位必读文档）
-- **强制流程**：先读全局索引 → 再读对应文档 → 然后编码 → 最后判断是否更新知识库
-- **高风险区域**：解析路由、中间件栈、Basic Auth、URL 正则、部署配置 → 修改前必须读 `docs/knowledge/05_change_safety.md`
