@@ -191,13 +191,13 @@ Key platforms include:
 
 ### Issue tracker
 
-Issues are tracked in GitHub Issues using the `gh` CLI. See `docs/agents/issue-tracker.md`.
+Issues 记录在 GitHub Issues（wujunwei928/parse-video），使用 `gh` CLI。见 `docs/agents/issue-tracker.md`。
 
 ### Triage labels
 
-Uses the default five-label triage vocabulary (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
+使用默认五标签 triage 词汇（needs-triage、needs-info、ready-for-agent、ready-for-human、wontfix）。见 `docs/agents/triage-labels.md`。
 
 ### Domain docs
 
-Single-context layout: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+Single-context 布局：仓库根目录一个 `GLOSSARY.md` + `docs/adr/`。见 `docs/agents/domain.md`。
 

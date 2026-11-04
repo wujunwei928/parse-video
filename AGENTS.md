@@ -26,3 +26,17 @@ Recent history uses conventional prefixes such as `feat(api):`, `fix:`, `docs:`,
 ## Configuration & Security
 Use environment variables instead of hardcoded secrets: `PARSE_VIDEO_USERNAME`, `PARSE_VIDEO_PASSWORD`, `RATE_LIMIT_RPM`, and `CORS_ORIGINS`. When adding new parsers, avoid logging credentials or raw private tokens and keep outbound requests consistent with the existing platform client behavior.
 
+## Agent skills
+
+### Issue tracker
+
+Issues 记录在 GitHub Issues（wujunwei928/parse-video），使用 `gh` CLI。见 `docs/agents/issue-tracker.md`。
+
+### Triage labels
+
+使用默认五标签 triage 词汇（needs-triage、needs-info、ready-for-agent、ready-for-human、wontfix）。见 `docs/agents/triage-labels.md`。
+
+### Domain docs
+
+Single-context 布局：仓库根目录一个 `GLOSSARY.md` + `docs/adr/`。见 `docs/agents/domain.md`。
+
