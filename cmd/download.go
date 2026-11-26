@@ -21,6 +21,8 @@ import (
 
 var invalidFileCharRe = regexp.MustCompile("[<>:\"/\\\\|?*\\x00-\\x1f]")
 
+const douyinMediaUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/130.0.0.0 Safari/537.36"
+
 // sanitizeFilename 清理文件名中的非法字符
 func sanitizeFilename(name string) string {
 	name = invalidFileCharRe.ReplaceAllString(name, "_")
@@ -67,6 +69,11 @@ func downloadFile(ctx context.Context, client *http.Client, fileURL, savePath st
 		return err
 	}
 	request.Header.Set("User-Agent", parser.DefaultUserAgent)
+	if target, err := url.Parse(fileURL); err == nil {
+		if isDouyinMediaHost(target.Hostname()) {
+			setDouyinMediaHeaders(request)
+		}
+	}
 	response, err := client.Do(request)
 	if err != nil {
 		return err

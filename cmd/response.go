@@ -15,6 +15,7 @@ const (
 	ErrUnsupportedSource   = "UNSUPPORTED_SOURCE"
 	ErrIDParseNotSupported = "ID_PARSE_NOT_SUPPORTED"
 	ErrParseFailed         = "PARSE_FAILED"
+	ErrDownloadFailed      = "DOWNLOAD_FAILED"
 	ErrUnauthorized        = "UNAUTHORIZED"
 	ErrRateLimited         = "RATE_LIMITED"
 	ErrInternal            = "INTERNAL_ERROR"

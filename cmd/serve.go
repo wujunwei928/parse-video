@@ -76,6 +76,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 		v1.GET("/platforms", platformsHandler)
 		v1.GET("/parse", v1ParseURLHandler)
 		v1.GET("/parse/:source/:video_id", v1ParseIDHandler)
+		v1.GET("/douyin/download", v1DouyinDownloadHandler)
 	}
 
 	// 旧路由（向后兼容）
