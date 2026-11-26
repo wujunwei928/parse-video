@@ -75,7 +75,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 		v1.GET("/health", healthHandler)
 		v1.GET("/platforms", platformsHandler)
 		v1.GET("/parse", v1ParseURLHandler)
+		v1.POST("/parse/batch", v1BatchParseHandler)
 		v1.GET("/parse/:source/:video_id", v1ParseIDHandler)
+		v1.GET("/douyin/download", v1DouyinDownloadHandler)
+		v1.POST("/download/batch", v1BatchDownloadHandler)
 	}
 
 	// 旧路由（向后兼容）
@@ -87,7 +90,7 @@ func runServe(cmd *cobra.Command, args []string) error {
 		Handler:           r,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
-		WriteTimeout:      40 * time.Second,
+		WriteTimeout:      11 * time.Minute,
 		IdleTimeout:       60 * time.Second,
 	}
 	log.Printf("服务启动，监听端口 %s", addr)

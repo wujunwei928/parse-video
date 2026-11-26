@@ -19,7 +19,8 @@ import (
 type douYin struct{}
 
 func (d douYin) parseVideoID(ctx context.Context, videoId string) (*VideoParseInfo, error) {
-	reqUrl := fmt.Sprintf("https://www.iesdouyin.com/share/video/%s", videoId)
+	sharePageURL := fmt.Sprintf("https://www.iesdouyin.com/share/video/%s", videoId)
+	reqUrl := sharePageURL
 
 	client := newClient(SourceDouYin)
 	res, err := client.R().SetContext(ctx).
@@ -31,6 +32,7 @@ func (d douYin) parseVideoID(ctx context.Context, videoId string) (*VideoParseIn
 
 	isNote := false
 	resBody := res.Body()
+	sharePageCookies := res.Cookies()
 	canonical, err := d.getCanonicalFromHTML(string(resBody))
 	if err == nil && canonical != "" {
 		//判断字符串中是否有 /note/ 字符
@@ -88,9 +90,18 @@ func (d douYin) parseVideoID(ctx context.Context, videoId string) (*VideoParseIn
 
 		data, err = d.fetchNativeVideoDetail(ctx, client, videoId)
 		if err != nil {
-			return nil, fmt.Errorf("get native douyin video detail: %w", err)
+			webErr := err
+			var h5Err error
+			data, h5Err = d.fetchNativeH5VideoDetail(ctx, client, sharePageURL, resBody, sharePageCookies, videoId)
+			if h5Err != nil {
+				return nil, fmt.Errorf(
+					"get native douyin video detail: web detail failed: %v; h5 item info failed: %w",
+					webErr,
+					h5Err,
+				)
+			}
 		}
-		// Detail API covers both normal videos and image posts. The common
+		// Detail APIs cover both normal videos and image posts. The common
 		// result mapping below determines the actual media type from images.
 		isNote = false
 	}

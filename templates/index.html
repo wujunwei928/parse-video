@@ -23,6 +23,7 @@
     <link rel="stylesheet" href="/static/css/theme-kusama.css"/>
     <link rel="stylesheet" href="/static/css/theme-starry.css"/>
     <link rel="stylesheet" href="/static/css/theme-hadid.css"/>
+    <link rel="stylesheet" href="/static/css/batch.css"/>
 </head>
 <body>
 
@@ -84,18 +85,22 @@
             <hr/>
         </div>
         <div class="mdui-card-content mdui-typo">
-            <div class="mdui-textfield mdui-textfield-floating-label">
-                <input class="mdui-textfield-input" type="text" id="url" placeholder="请粘贴视频分享地址" required/>
-                <div class="mdui-textfield-error">
-                    需要解析的视频地址不能为空
+            <div id="batchInputs" aria-label="批量视频链接">
+                <div class="batch-input-row" data-row-id="1">
+                    <label class="batch-input-label" for="batch-url-1">视频 1</label>
+                    <textarea class="mdui-textfield-input batch-url-input" id="batch-url-1" rows="2" placeholder="粘贴视频分享链接或完整分享文案"></textarea>
+                    <button class="mdui-btn batch-remove-button" type="button" onclick="removeBatchInput(this)" aria-label="移除视频 1">移除</button>
                 </div>
-                <!-- 解析按钮 -->
-                <button class="mdui-btn mdui-color-theme-accent mdui-ripple" onclick="setValue()"><span>解析</span></button>
-                <!-- 新增清空按钮 -->
-                <button class="mdui-btn mdui-color-red mdui-ripple" onclick="clearInput()"><span>清空</span></button>
             </div>
+            <div class="batch-actions">
+                <span id="batchInputCount" class="batch-input-count">1 / 8</span>
+                <button class="mdui-btn batch-add-button" id="addBatchInputButton" type="button" onclick="addBatchInput()">添加输入框</button>
+                <button class="mdui-btn mdui-color-theme-accent mdui-ripple" id="parseBatchButton" type="button" onclick="parseAll()"><span>解析全部</span></button>
+                <button class="mdui-btn mdui-color-red mdui-ripple" id="clearBatchButton" type="button" onclick="clearBatchInputs()"><span>清空</span></button>
+            </div>
+            <div id="batchStatus" class="batch-status" role="status" aria-live="polite"></div>
         </div>
-        <div class="down mdui-text-center"></div>
+        <div class="down mdui-text-center" id="batchResults"></div>
     </div>
 </main>
 

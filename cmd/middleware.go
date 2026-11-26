@@ -41,7 +41,11 @@ func corsMiddleware(allowedOrigins string) gin.HandlerFunc {
 			c.Header("Access-Control-Allow-Origin", origin)
 		}
 
-		c.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
+		allowedMethods := "GET, OPTIONS"
+		if c.Request.URL.Path == "/api/v1/parse/batch" || c.Request.URL.Path == "/api/v1/download/batch" {
+			allowedMethods = "POST, OPTIONS"
+		}
+		c.Header("Access-Control-Allow-Methods", allowedMethods)
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 		if c.Request.Method == http.MethodOptions {
