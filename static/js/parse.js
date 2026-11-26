@@ -20,6 +20,18 @@ function safeMediaURL(value) {
     return null;
 }
 
+function isDouyinShareText(value) {
+    const normalized = typeof value === "string" ? value.replace(/\\/g, "") : "";
+    const links = normalized.match(/https?:\/\/[^\s]+/ig) || [];
+    return links.some(link => {
+        try {
+            return ["v.douyin.com", "www.douyin.com", "www.iesdouyin.com"].includes(new URL(link).hostname.toLowerCase());
+        } catch {
+            return false;
+        }
+    });
+}
+
 function appendDownloadLink(container, url, label, filename) {
     if (!url) {
         return;
@@ -27,10 +39,12 @@ function appendDownloadLink(container, url, label, filename) {
     const link = document.createElement("a");
     link.className = "mdui-btn mdui-btn-raised";
     link.href = url;
-    link.target = "_blank";
-    link.rel = "noopener";
+    if (/^https?:\/\//i.test(url)) {
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.referrerPolicy = "no-referrer";
+    }
     link.download = filename;
-    link.referrerPolicy = "no-referrer";
     const text = document.createElement("span");
     text.textContent = label;
     link.append(text);
@@ -38,13 +52,19 @@ function appendDownloadLink(container, url, label, filename) {
     return link;
 }
 
-function renderParseResult(data) {
+function renderParseResult(data, shareText = "") {
     const result = document.createDocumentFragment();
     const title = document.createElement("h4");
     title.textContent = typeof data.title === "string" ? data.title : "";
     result.append(title);
     appendDownloadLink(result, safeMediaURL(data.cover_url), "下载封面", "video");
-    appendDownloadLink(result, safeMediaURL(data.video_url), "下载视频", "video");
+    const directVideoURL = safeMediaURL(data.video_url);
+    const videoDownloadURL = directVideoURL && isDouyinShareText(shareText)
+        ? "/api/v1/douyin/download?url=" + encodeURIComponent(shareText)
+        : directVideoURL;
+    const videoFilename = ((typeof data.title === "string" && data.title.trim()) || "video")
+        .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "_") + ".mp4";
+    appendDownloadLink(result, videoDownloadURL, "下载视频", videoFilename);
     appendDownloadLink(result, safeMediaURL(data.music_url), "下载音频", "audio");
 
     const gallery = Array.isArray(data.images) ? data.images.flatMap((item, index) => {
@@ -116,7 +136,7 @@ async function setValue() {
     }
 
     if (response?.code === 200 && response.data) {
-        renderParseResult(response.data);
+        renderParseResult(response.data, data);
         showTextSnackbar("解析成功");
     } else {
         const detail = typeof response?.msg === "string" ? response.msg : "";
