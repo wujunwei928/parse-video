@@ -111,6 +111,100 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/v1/parse/batch:
+    post:
+      summary: 并发解析多条分享链接
+      operationId: parseURLBatch
+      description: 一次最多解析 8 条链接。服务器并发解析，并以 NDJSON 格式逐条返回完成结果。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  minItems: 1
+                  maxItems: 8
+                  items:
+                    type: string
+                    maxLength: 4096
+      responses:
+        "200":
+          description: 每行一个解析结果，按完成顺序发送；index 对应请求 items 的下标
+          content:
+            application/x-ndjson:
+              schema:
+                type: string
+                description: 每一行都是 BatchParseResult JSON 对象
+        "400":
+          description: 请求格式错误或链接数量无效
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 认证失败（启用 Basic Auth 时）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: 请求过于频繁
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/download/batch:
+    post:
+      summary: 重新解析并打包下载多条视频
+      operationId: downloadVideoBatch
+      description: 最多接收 8 条分享文案，逐条重新解析并将可下载的视频放入 ZIP。README.txt 记录每项的处理结果。
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  minItems: 1
+                  maxItems: 8
+                  items:
+                    type: string
+                    maxLength: 4096
+      responses:
+        "200":
+          description: 视频 ZIP 文件；单项失败信息写入 README.txt
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: 请求格式错误或链接数量无效
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 认证失败（启用 Basic Auth 时）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: 请求过于频繁
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/v1/douyin/download:
     get:
       summary: 重新解析并下载抖音视频
@@ -230,6 +324,18 @@ paths:
 
 components:
   schemas:
+    BatchParseResult:
+      type: object
+      properties:
+        index:
+          type: integer
+          description: 对应请求 items 的从零开始的下标
+        data:
+          $ref: "#/components/schemas/VideoParseInfo"
+        error:
+          type: string
+          description: 该链接的解析错误（存在解析失败时）
+
     VideoParseInfo:
       type: object
       properties:

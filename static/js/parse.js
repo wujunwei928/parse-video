@@ -53,7 +53,8 @@ function appendDownloadLink(container, url, label, filename) {
 }
 
 function renderParseResult(data, shareText = "") {
-    const result = document.createDocumentFragment();
+    const result = document.createElement("div");
+    result.className = "batch-result-content";
     const title = document.createElement("h4");
     title.textContent = typeof data.title === "string" ? data.title : "";
     result.append(title);
@@ -116,34 +117,288 @@ function renderParseResult(data, shareText = "") {
         }
     }
 
-    document.querySelector(".down").replaceChildren(result);
+    return result;
 }
 
-async function setValue() {
-    const data = document.getElementById("url").value.trim();
-    if (!data) {
-        showTextSnackbar("需要解析的视频地址不能为空");
+const maxBatchInputs = 8;
+let nextBatchRowId = 2;
+let batchParsing = false;
+let batchDownloadItems = [];
+
+function getBatchInputRows() {
+    return Array.from(document.querySelectorAll(".batch-input-row"));
+}
+
+function updateBatchInputLabels() {
+    const rows = getBatchInputRows();
+    rows.forEach((row, index) => {
+        const number = index + 1;
+        const label = row.querySelector(".batch-input-label");
+        const input = row.querySelector(".batch-url-input");
+        const remove = row.querySelector(".batch-remove-button");
+        label.textContent = "视频 " + number;
+        label.htmlFor = input.id;
+        remove.setAttribute("aria-label", "移除视频 " + number);
+        remove.disabled = batchParsing || rows.length === 1;
+    });
+    document.getElementById("batchInputCount").textContent = rows.length + " / " + maxBatchInputs;
+    document.getElementById("addBatchInputButton").disabled = batchParsing || rows.length >= maxBatchInputs;
+    document.getElementById("parseBatchButton").disabled = batchParsing;
+    document.getElementById("clearBatchButton").disabled = batchParsing;
+    document.querySelectorAll(".batch-url-input").forEach(input => { input.disabled = batchParsing; });
+}
+
+function addBatchInput() {
+    const rows = getBatchInputRows();
+    if (batchParsing || rows.length >= maxBatchInputs) {
         return;
     }
+    const rowId = nextBatchRowId++;
+    const row = document.createElement("div");
+    row.className = "batch-input-row";
+    row.dataset.rowId = String(rowId);
 
-    let response;
+    const label = document.createElement("label");
+    label.className = "batch-input-label";
+    label.htmlFor = "batch-url-" + rowId;
+
+    const input = document.createElement("textarea");
+    input.className = "mdui-textfield-input batch-url-input";
+    input.id = "batch-url-" + rowId;
+    input.rows = 2;
+    input.placeholder = "粘贴视频分享链接或完整分享文案";
+
+    const remove = document.createElement("button");
+    remove.className = "mdui-btn batch-remove-button";
+    remove.type = "button";
+    remove.textContent = "移除";
+    remove.addEventListener("click", () => removeBatchInput(remove));
+
+    row.append(label, input, remove);
+    document.getElementById("batchInputs").append(row);
+    updateBatchInputLabels();
+    input.focus();
+}
+
+function removeBatchInput(button) {
+    const rows = getBatchInputRows();
+    if (batchParsing || rows.length <= 1) {
+        return;
+    }
+    button.closest(".batch-input-row").remove();
+    updateBatchInputLabels();
+}
+
+function createBatchResultCard(index) {
+    const card = document.createElement("section");
+    card.className = "batch-result-card is-pending";
+    card.dataset.index = String(index);
+
+    const heading = document.createElement("div");
+    heading.className = "batch-result-heading";
+    const title = document.createElement("h3");
+    title.textContent = "视频 " + (index + 1);
+    const status = document.createElement("span");
+    status.className = "batch-result-state";
+    status.textContent = "等待解析";
+    heading.append(title, status);
+    card.append(heading);
+    return card;
+}
+
+function updateBatchResultCard(card, result, shareText) {
+    const status = card.querySelector(".batch-result-state");
+    card.classList.remove("is-pending", "is-success", "is-error");
+    if (result?.data) {
+        card.classList.add("is-success");
+        status.textContent = "解析成功";
+        card.append(renderParseResult(result.data, shareText));
+        return true;
+    }
+    card.classList.add("is-error");
+    status.textContent = "解析失败";
+    const message = document.createElement("p");
+    message.className = "batch-result-error";
+    message.textContent = typeof result?.error === "string" ? result.error : "解析失败，请稍后重试";
+    card.append(message);
+    return false;
+}
+
+function updateBatchProgress(completed, total, successes) {
+    const status = document.getElementById("batchStatus");
+    status.textContent = "已完成 " + completed + " / " + total + " 项，成功 " + successes + " 项" + (completed < total ? "，其他项目仍在解析" : "");
+}
+
+function addBatchDownloadButton(items) {
+    if (items.length === 0) {
+        return;
+    }
+    const toolbar = document.createElement("div");
+    toolbar.className = "batch-download-toolbar";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "mdui-btn mdui-color-theme-accent mdui-ripple batch-download-button";
+    button.textContent = "下载全部成功视频（" + items.length + "）";
+    button.addEventListener("click", () => downloadBatchVideos(items));
+    toolbar.append(button);
+    document.getElementById("batchResults").prepend(toolbar);
+}
+
+async function parseAll() {
+    if (batchParsing) {
+        return;
+    }
+    const items = getBatchInputRows()
+        .map(row => row.querySelector(".batch-url-input").value.trim())
+        .filter(Boolean);
+    if (items.length === 0) {
+        showTextSnackbar("请至少粘贴一个视频链接或分享文案");
+        return;
+    }
+    batchDownloadItems = [];
+    batchParsing = true;
+    updateBatchInputLabels();
+
+    const results = document.getElementById("batchResults");
+    results.replaceChildren();
+    const cards = items.map((item, index) => {
+        const card = createBatchResultCard(index);
+        const source = document.createElement("p");
+        source.className = "batch-result-source";
+        source.textContent = item;
+        card.append(source);
+        results.append(card);
+        return card;
+    });
+    document.getElementById("batchStatus").textContent = "正在并发解析 " + items.length + " 项…";
+
+    let completed = 0;
+    let successes = 0;
     try {
-        const request = await fetch("/video/share/url/parse?url=" + encodeURIComponent(data));
-        response = await request.json();
-    } catch {
-        showTextSnackbar("解析请求失败，请稍后重试");
+        const response = await fetch("/api/v1/parse/batch", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ items })
+        });
+        if (!response.ok || !response.body) {
+            const error = await response.json().catch(() => null);
+            throw new Error(error?.error?.message || "批量解析请求失败，请稍后重试");
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let pending = "";
+        while (true) {
+            const { value, done } = await reader.read();
+            pending += decoder.decode(value || new Uint8Array(), { stream: !done });
+            const lines = pending.split("\n");
+            pending = lines.pop() || "";
+            for (const line of lines) {
+                if (!line.trim()) {
+                    continue;
+                }
+                const result = JSON.parse(line);
+                const card = cards[result.index];
+                if (!card || card.dataset.complete === "true") {
+                    continue;
+                }
+                const success = updateBatchResultCard(card, result, items[result.index]);
+                card.dataset.complete = "true";
+                completed++;
+                if (success) {
+                    successes++;
+                    batchDownloadItems.push(items[result.index]);
+                }
+                updateBatchProgress(completed, items.length, successes);
+            }
+            if (done) {
+                break;
+            }
+        }
+        if (pending.trim()) {
+            const result = JSON.parse(pending);
+            const card = cards[result.index];
+            if (card && card.dataset.complete !== "true") {
+                const success = updateBatchResultCard(card, result, items[result.index]);
+                card.dataset.complete = "true";
+                completed++;
+                if (success) {
+                    successes++;
+                    batchDownloadItems.push(items[result.index]);
+                }
+            }
+        }
+        cards.forEach((card, index) => {
+            if (card.dataset.complete !== "true") {
+                updateBatchResultCard(card, { error: "解析服务未返回结果，请重试" }, items[index]);
+                card.dataset.complete = "true";
+                completed++;
+            }
+        });
+        updateBatchProgress(completed, items.length, successes);
+        addBatchDownloadButton(batchDownloadItems);
+        showTextSnackbar("批量解析完成：成功 " + successes + " 项");
+    } catch (error) {
+        const message = error instanceof SyntaxError ? "解析服务返回了无效结果" : error.message;
+        cards.forEach(card => {
+            if (card.dataset.complete !== "true") {
+                updateBatchResultCard(card, { error: message }, "");
+                card.dataset.complete = "true";
+            }
+        });
+        addBatchDownloadButton(batchDownloadItems);
+        document.getElementById("batchStatus").textContent = message;
+        showTextSnackbar(message);
+    } finally {
+        batchParsing = false;
+        updateBatchInputLabels();
+    }
+}
+
+function downloadBatchVideos(items) {
+    if (!Array.isArray(items) || items.length === 0) {
+        showTextSnackbar("没有可下载的视频");
         return;
     }
-
-    if (response?.code === 200 && response.data) {
-        renderParseResult(response.data, data);
-        showTextSnackbar("解析成功");
-    } else {
-        const detail = typeof response?.msg === "string" ? response.msg : "";
-        showTextSnackbar("解析失败，视频不存在或者链接不正确" + (detail ? "：" + detail : ""));
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = "/api/v1/download/batch";
+    form.target = "_blank";
+    form.hidden = true;
+    for (const item of items) {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "items";
+        input.value = item;
+        form.append(input);
     }
+    document.body.append(form);
+    form.submit();
+    form.remove();
 }
 
-function clearInput() {
-    document.getElementById("url").value = "";
+function clearBatchInputs() {
+    if (batchParsing) {
+        return;
+    }
+    getBatchInputRows().forEach((row, index) => {
+        if (index > 0) {
+            row.remove();
+        } else {
+            row.querySelector(".batch-url-input").value = "";
+        }
+    });
+    document.getElementById("batchResults").replaceChildren();
+    document.getElementById("batchStatus").textContent = "";
+    batchDownloadItems = [];
+    updateBatchInputLabels();
 }
+
+function initBatchInputs() {
+    document.querySelectorAll(".batch-remove-button").forEach(button => {
+        button.addEventListener("click", () => removeBatchInput(button));
+    });
+    updateBatchInputLabels();
+}
+
+initBatchInputs();

@@ -1,0 +1,164 @@
+#batchInputs {
+    display: grid;
+    gap: 12px;
+}
+
+.batch-input-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 12px;
+    border: 1px solid rgba(128, 128, 128, 0.3);
+    border-radius: 8px;
+}
+
+.batch-input-label {
+    grid-column: 1 / -1;
+    font-weight: 600;
+}
+
+.batch-url-input {
+    grid-column: 1;
+    width: 100% !important;
+    min-height: 4.5em;
+    margin: 0 !important;
+    padding: 10px 12px;
+    border: 1px solid #bdbdbd;
+    border-radius: 4px;
+    resize: vertical;
+    box-sizing: border-box;
+    line-height: 1.5;
+}
+
+.batch-url-input:focus {
+    border-color: #ff4081;
+    outline: 2px solid rgba(255, 64, 129, 0.16);
+}
+
+.batch-remove-button,
+.batch-add-button,
+.batch-actions .mdui-btn,
+.batch-download-button {
+    width: auto !important;
+    min-width: 0;
+    margin: 0 !important;
+    padding: 0 14px;
+    white-space: nowrap;
+}
+
+.batch-remove-button {
+    grid-column: 2;
+    grid-row: 2;
+    height: 36px;
+    color: #666;
+}
+
+.batch-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.batch-input-count {
+    margin-right: auto;
+    opacity: 0.7;
+    font-size: 0.9em;
+}
+
+.batch-status {
+    min-height: 1.5em;
+    margin-top: 12px;
+    opacity: 0.8;
+}
+
+.batch-result-card {
+    margin-top: 16px;
+    padding: 16px;
+    border: 1px solid rgba(128, 128, 128, 0.28);
+    border-radius: 8px;
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
+.batch-result-card.is-success {
+    border-left: 4px solid #43a047;
+}
+
+.batch-result-card.is-error {
+    border-left: 4px solid #e53935;
+}
+
+.batch-result-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.batch-result-heading h3 {
+    margin: 0;
+    font-size: 1.15em;
+}
+
+.batch-result-state {
+    opacity: 0.75;
+    white-space: nowrap;
+}
+
+.batch-result-source,
+.batch-result-error {
+    margin: 12px 0 0;
+    overflow-wrap: anywhere;
+}
+
+.batch-result-error {
+    color: #c62828;
+}
+
+.batch-result-content {
+    margin-top: 12px;
+}
+
+.batch-result-content .mdui-btn {
+    width: auto !important;
+    margin: 0 8px 8px 0 !important;
+    padding: 0 14px;
+}
+
+.batch-result-content h4 {
+    overflow-wrap: anywhere;
+}
+
+.batch-download-toolbar {
+    margin-top: 20px;
+}
+
+@media (max-width: 600px) {
+    .batch-input-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+    }
+
+    .batch-url-input {
+        min-width: 0;
+    }
+
+    .batch-actions {
+        align-items: stretch;
+    }
+
+    .batch-input-count {
+        flex-basis: 100%;
+    }
+
+    .batch-actions .mdui-btn {
+        flex: 1 1 auto;
+    }
+
+    .batch-result-card {
+        padding: 12px;
+    }
+}
